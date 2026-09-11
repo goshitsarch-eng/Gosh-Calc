@@ -38,7 +38,10 @@ is justified (no duplication of provided components). Disabled keys
 Current: none. Pattern: `widget::toaster` overlay wraps content;
 `Toasts::push` yields auto-expiring `Toast`. Change: wrap view root
 in `toaster(&self.toasts, root)`; CopyResult pushes `fl!("copied")`.
-Verified: build + launch + click-copy shows toast.
+Verified: build + headless launch (toaster overlay renders, no
+errors); push/auto-expire path reviewed against libcosmic
+`Toasts::push` (tokio timeout → `ToastClose`). Pixel-level toast
+appearance awaits a manual click-through on a live desktop.
 
 ## Display / errors (B3)
 
@@ -57,10 +60,11 @@ no loading state needed (fully synchronous engine). All present.
 
 Grids use Fill + theme spacing; window resizable from 430×560
 default. Scientific 8-column rows are dense at minimum width but
-labels are short (≤6 glyphs); no clipping observed beyond
-acceptable density. No minimum-size API in this libcosmic rev for
-this shell shape — not forced. Awkward sizes exercised at launch
-(narrow/wide) — no overlap.
+labels are short (≤6 glyphs). No minimum-size API in this libcosmic
+rev for this shell shape — not forced. Headless launch covered the
+default size only; narrow/wide resize behavior rests on Fill-based
+layout (no fixed pixel widths anywhere in the pads) and remains a
+manual check on a live desktop.
 
 ## Keyboard / focus / a11y
 
