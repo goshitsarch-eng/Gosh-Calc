@@ -44,49 +44,46 @@ Buttons use `cosmic::widget::button`: digits and A–F use `standard`,
 binary operators and utility keys use `text`, `=` uses `suggested`
 (accent). Uniform sizing via `Length::Fill` in a fixed grid.
 
-### Standard (4 cols x 5 rows)
+### Standard (4 cols x 6 rows, as shipped)
 
 ```
-CE  C   bs  ÷
+%   CE  C   bs
+1/x x²  √   ÷
 7   8   9   ×
 4   5   6   −
 1   2   3   +
 ±   0   .   =
 ```
 
-### Scientific (6 cols x 6 rows)
+### Scientific (8 cols x 6 rows, as shipped)
 
 ```
-(   )   x!  %   CE  C
-x²  x³  xʸ  y√x ʷˢˣ→  ÷   bs
-√   ∛   1/x eˣ  7   8
-9   ×   sin cos tan ln
-4   5   6   −   log π
-e   DEG ±   .   +   =
+x²  x³  xʸ  y√x CE  C   bs  ÷
+√   ∛   1/x x!  7   8   9   ×
+sin cos tan ln  4   5   6   −
+s⁻¹ c⁻¹ t⁻¹ log 1   2   3   +
+eˣ  10ˣ π   e   ±   0   .   =
+DEG |x| EE  Ans (   )   %   (gap)
 ```
 
-Rows arrange so digits 1-9/0 stay in their standard positions; exact row
-order finalized in code — grid contents are fixed, documented in PLAN
-checklist.
+Digits 1-9/0 keep their standard positions on the right; functions
+fill the left. DEG/RAD toggle shows the current unit; inverse trig
+(s⁻¹ c⁻¹ t⁻¹) is always visible — no 2nd-shift layer.
 
-Includes: parentheses, powers (x², x³, xʸ), roots (√, ∛, y√x), log, ln,
-eˣ, 10ˣ (row space permitting — otherwise recorded as deviation),
-factorial, reciprocal, sin/cos/tan with inverse variants via a 2nd
-toggle **or** long — decision: expose `sin cos tan` and `asin acos atan`
-both in the grid (6 columns give room), DEG/RAD toggle showing current
-unit, π and e, percent, ±, backspace, CE, C.
-
-### Programmer (6 cols x 6 rows)
+### Programmer (6 cols x 6 rows, as shipped)
 
 ```
-A   <<  >>  AND OR  XOR
-B   C   NOT %   ÷   bs
-(base segmented: HEX DEC OCT BIN)
-D   E   F   7   8   9
-CE  ±   ×   4   5   6
-−   +   (   1   2   3
-)   0   .   =   (pad)
+A   B   C   D   E   F
+<<  >>  AND OR  XOR NOT
+(   )   %   CE  C   bs
+7   8   9   ±   ÷   ×
+4   5   6   .   −   +
+1   2   3   0   (gap) =
 ```
+
+Base selection (HEX DEC OCT BIN) lives in the display readout row,
+not the grid. `=` spans the last cell; `.` is disabled (integers
+only).
 
 A–F keys disabled outside HEX. `.` disabled in programmer mode (integers
 only). `%` is modulo here, not percent. `<<`/`>>` shifts. A segmented

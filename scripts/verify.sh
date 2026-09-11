@@ -20,9 +20,24 @@ cargo clippy --all-targets -- -D warnings
 step "cargo test"
 cargo test
 
+step "desktop-file-validate"
+if command -v desktop-file-validate >/dev/null 2>&1; then
+    desktop-file-validate resources/dev.goshapps.calc.desktop
+else
+    echo "verify: desktop-file-validate not available, skipping"
+fi
+
+step "appstreamcli validate"
+if command -v appstreamcli >/dev/null 2>&1; then
+    appstreamcli validate --pedantic resources/dev.goshapps.calc.metainfo.xml
+else
+    echo "verify: appstreamcli not available, skipping"
+fi
+
 if command -v flatpak-builder >/dev/null 2>&1; then
     step "flatpak-builder"
-    flatpak-builder --force-clean --user --install-deps-from=flathub \
+    flatpak-builder --force-clean --disable-rofiles-fuse --user \
+        --install-deps-from=flathub \
         build-dir flatpak/dev.goshapps.calc.yml
 
     step "smoke test"
