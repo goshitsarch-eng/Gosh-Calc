@@ -10,7 +10,11 @@
 use std::fmt;
 
 const MAX_ENTRY_LEN: usize = 32;
-const MAX_HISTORY: usize = 100;
+pub const MAX_HISTORY: usize = 100;
+/// Bound for any single persisted string (history expr/result) accepted
+/// from the config file. Engine-formatted values are far shorter; this
+/// only bites on hostile or rotted config.
+pub const MAX_PERSIST_STR: usize = 256;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Mode {
@@ -476,6 +480,7 @@ impl CalcState {
         }
         if let Some(h) = self.history.first() {
             self.entry = h.result.clone();
+            truncate_str(&mut self.entry, MAX_ENTRY_LEN);
             self.fresh = true;
             self.evaluated = false;
         }
@@ -515,7 +520,9 @@ impl CalcState {
                 Some(Token::LParen) => return,
                 // op correction: "2 + ×" -> "2 ×"
                 Some(Token::Op(_)) => {
-                    *self.expr.last_mut().unwrap() = Token::Op(op);
+                    if let Some(last) = self.expr.last_mut() {
+                        *last = Token::Op(op);
+                    }
                     return;
                 }
                 // nothing at all: "×" starts "0 ×"; leading "−" signs
@@ -724,9 +731,21 @@ impl CalcState {
             return;
         };
         self.entry = h.result.clone();
+        truncate_str(&mut self.entry, MAX_ENTRY_LEN);
         self.error = None;
         self.fresh = true;
         self.evaluated = false;
+    }
+
+    /// Clamp data loaded from the config file to safe bounds. The
+    /// config file is user-editable shared state, so history length
+    /// and per-field strings are treated as untrusted input (S-1).
+    pub fn sanitize_persisted(&mut self) {
+        self.history.truncate(MAX_HISTORY);
+        for h in &mut self.history {
+            truncate_str(&mut h.expr, MAX_PERSIST_STR);
+            truncate_str(&mut h.result, MAX_PERSIST_STR);
+        }
     }
 
     pub fn clear_history(&mut self) {
@@ -1214,6 +1233,18 @@ fn parse_atom(toks: &[Token], pos: &mut usize, st: &CalcState) -> Result<Value, 
     }
 }
 
+/// Truncate a string to at most `max` bytes on a char boundary.
+fn truncate_str(s: &mut String, max: usize) {
+    if s.len() <= max {
+        return;
+    }
+    let mut end = max.min(s.len());
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    s.truncate(end);
+}
+
 /// Format an f64 for display: up to 12 significant digits, trailing
 /// zeros trimmed, e-notation outside 1e-10 <= |v| < 1e16.
 pub fn fmt_f64(v: f64) -> String {
@@ -1225,8 +1256,14 @@ pub fn fmt_f64(v: f64) -> String {
     }
     // 12 significant digits
     let s = format!("{v:.11e}");
-    let (mant, exp_s) = s.split_once('e').unwrap();
-    let exp: i32 = exp_s.parse().unwrap();
+    let (mant, exp_s) = match s.split_once('e') {
+        Some(pair) => pair,
+        None => return "Error".into(),
+    };
+    let exp: i32 = match exp_s.parse() {
+        Ok(e) => e,
+        Err(_) => return "Error".into(),
+    };
     let mant = mant.trim_end_matches('0').trim_end_matches('.');
     if !(-9..16).contains(&exp) {
         return format!("{mant}e{exp}");
@@ -1619,6 +1656,35 @@ mod tests {
         }
         s.equals();
         assert!(s.error.is_none() || s.error == Some(CalcError::Overflow));
+    }
+
+    #[test]
+    fn sanitize_truncates_hostile_history() {
+        let mut s = st();
+        for i in 0..150 {
+            s.history.push(HistoryEntry {
+                expr: "e".repeat(1000),
+                result: format!("{i}").repeat(100),
+            });
+        }
+        s.sanitize_persisted();
+        assert_eq!(s.history.len(), MAX_HISTORY);
+        assert!(s.history.iter().all(|h| h.expr.len() <= MAX_PERSIST_STR
+            && h.result.len() <= MAX_PERSIST_STR));
+    }
+
+    #[test]
+    fn recall_and_ans_clamp_huge_result() {
+        let mut s = st();
+        s.history.push(HistoryEntry {
+            expr: "x".into(),
+            result: "9".repeat(500),
+        });
+        s.recall_history(0);
+        assert!(s.entry().len() <= 32);
+        s.clear_entry();
+        s.input_ans();
+        assert!(s.entry().len() <= 32);
     }
 
     #[test]
