@@ -3,8 +3,8 @@
 
 //! Persisted settings via cosmic-config (file backend).
 
-use cosmic::cosmic_config::{Config, ConfigGet, ConfigSet};
 use crate::engine::{AngleUnit, CalcState, HistoryEntry, Mode};
+use cosmic::cosmic_config::{Config, ConfigGet, ConfigSet};
 
 pub const CONFIG_VERSION: u64 = 1;
 
@@ -34,6 +34,9 @@ pub fn load(store: &Config, state: &mut CalcState) {
     }
     if let Ok(h) = store.get::<Vec<HistoryEntry>>("history") {
         state.history = h;
+        // The config file is user-editable shared state: clamp length
+        // and string sizes before anything renders them (S-1).
+        state.sanitize_persisted();
     }
 }
 

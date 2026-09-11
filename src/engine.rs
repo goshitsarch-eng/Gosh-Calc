@@ -171,8 +171,13 @@ impl UnaryOp {
     pub fn allowed_in(self, mode: Mode) -> bool {
         match self {
             UnaryOp::Not => mode == Mode::Programmer,
-            UnaryOp::Square | UnaryOp::Cube | UnaryOp::Sqrt | UnaryOp::Cbrt | UnaryOp::Recip
-            | UnaryOp::Fact | UnaryOp::Abs => mode != Mode::Programmer,
+            UnaryOp::Square
+            | UnaryOp::Cube
+            | UnaryOp::Sqrt
+            | UnaryOp::Cbrt
+            | UnaryOp::Recip
+            | UnaryOp::Fact
+            | UnaryOp::Abs => mode != Mode::Programmer,
             _ => mode == Mode::Scientific,
         }
     }
@@ -777,13 +782,11 @@ impl CalcState {
             .expr
             .iter()
             .map(|t| match t {
-                Token::Val(v) => {
-                    Token::Val(if mode == Mode::Programmer {
-                        Value::I(v.as_i64())
-                    } else {
-                        Value::F(v.as_f64())
-                    })
-                }
+                Token::Val(v) => Token::Val(if mode == Mode::Programmer {
+                    Value::I(v.as_i64())
+                } else {
+                    Value::F(v.as_f64())
+                }),
                 other => *other,
             })
             .collect();
@@ -841,7 +844,8 @@ impl CalcState {
             }
             if self.base == Base::Dec {
                 // decimal entry is a signed i64 literal
-                return s.parse::<i64>()
+                return s
+                    .parse::<i64>()
                     .map(Value::I)
                     .map_err(|_| CalcError::OutOfRange);
             }
@@ -1041,8 +1045,12 @@ impl CalcState {
         // input truncation like sin(pi) = -2e-13
         let r = if matches!(
             op,
-            UnaryOp::Sin | UnaryOp::Cos | UnaryOp::Tan | UnaryOp::Asin
-                | UnaryOp::Acos | UnaryOp::Atan
+            UnaryOp::Sin
+                | UnaryOp::Cos
+                | UnaryOp::Tan
+                | UnaryOp::Asin
+                | UnaryOp::Acos
+                | UnaryOp::Atan
         ) && r.abs() < 1e-12
         {
             0.0
@@ -1669,8 +1677,10 @@ mod tests {
         }
         s.sanitize_persisted();
         assert_eq!(s.history.len(), MAX_HISTORY);
-        assert!(s.history.iter().all(|h| h.expr.len() <= MAX_PERSIST_STR
-            && h.result.len() <= MAX_PERSIST_STR));
+        assert!(s
+            .history
+            .iter()
+            .all(|h| h.expr.len() <= MAX_PERSIST_STR && h.result.len() <= MAX_PERSIST_STR));
     }
 
     #[test]

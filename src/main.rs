@@ -12,6 +12,7 @@ use cosmic::cosmic_config::Config;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard, Event, Length, Size, Subscription};
 use cosmic::prelude::*;
+use cosmic::widget::toaster::{Toast, ToastId, Toasts};
 use cosmic::widget::{self, button, column, container, nav_bar, row, scrollable, text};
 use cosmic::{executor, theme, Element};
 
@@ -50,6 +51,7 @@ pub enum Message {
     ClearHistory,
     CopyResult,
     ToggleContext,
+    ToastClose(ToastId),
     Surface(cosmic::surface::Action),
     KeyPressed {
         key: keyboard::Key,
@@ -97,6 +99,9 @@ fn key_message(
 ) -> Option<Message> {
     use keyboard::key::{Code, Named, Physical};
     if modifiers.control() {
+        if matches!(key.as_ref(), keyboard::Key::Named(Named::Insert)) {
+            return Some(Message::CopyResult);
+        }
         return match key.as_ref() {
             keyboard::Key::Character("c") | keyboard::Key::Character("C") => {
                 Some(Message::CopyResult)
@@ -160,15 +165,21 @@ fn key_message(
             ">" => Some(Message::Binary(BinOp::Shr)),
             "~" => Some(Message::Unary(UnaryOp::Not)),
             "p" | "P" if mode == Mode::Scientific => Some(Message::Constant(Const::Pi)),
-            "e" | "E" if mode == Mode::Programmer && base == Base::Hex => {
-                Some(Message::Digit(14))
-            }
+            "e" | "E" if mode == Mode::Programmer && base == Base::Hex => Some(Message::Digit(14)),
             "a" | "A" | "b" | "B" | "c" | "C" | "d" | "D" | "f" | "F"
                 if mode == Mode::Programmer && base == Base::Hex =>
             {
-                let d = c.to_ascii_lowercase().chars().next().unwrap() as u8 - b'a' + 10;
-                Some(Message::Digit(d))
+                // `c` is the matched arm text above, so this is always a
+                // hex letter in practice; the filter keeps it total so
+                // keyboard input can never panic here.
+                c.to_ascii_lowercase()
+                    .chars()
+                    .next()
+                    .filter(|ch| ('a'..='f').contains(ch))
+                    .map(|ch| Message::Digit(ch as u8 - b'a' + 10))
             }
+            // `h` is never a hex digit, so it is safe to use bare (D18).
+            "h" | "H" => Some(Message::ToggleContext),
             _ => None,
         },
         _ => None,
@@ -180,6 +191,17 @@ pub struct App {
     nav_model: nav_bar::Model,
     state: CalcState,
     store: Option<Config>,
+    toasts: Toasts<Message>,
+}
+
+/// Whether handling this message can mutate persisted state (mode,
+/// angle unit, history). Everything else must skip the config write
+/// so typing never touches the disk (P-1).
+fn needs_save(msg: &Message) -> bool {
+    matches!(
+        msg,
+        Message::Equals | Message::ClearHistory | Message::ToggleAngle
+    )
 }
 
 impl App {
@@ -244,6 +266,7 @@ impl cosmic::Application for App {
             nav_model,
             state,
             store,
+            toasts: Toasts::new(Message::ToastClose),
         };
         app.set_header_title(fl!("app-title"));
         if let Some(id) = app.core.main_window_id() {
@@ -266,7 +289,7 @@ impl cosmic::Application for App {
 
     fn header_end(&self) -> Vec<Element<'_, Self::Message>> {
         vec![widget::tooltip(
-            button::icon(widget::icon::from_name("view-sort-ascending-symbolic"))
+            button::icon(widget::icon::from_name("document-open-recent-symbolic"))
                 .on_press(Message::ToggleContext)
                 .description(fl!("history")),
             text::body(fl!("history")),
@@ -280,18 +303,17 @@ impl cosmic::Application for App {
             return None;
         }
         let spacing = theme::spacing();
-        let mut list = column![].spacing(spacing.space_xxs).padding(spacing.space_s);
+        let mut list = column![]
+            .spacing(spacing.space_xxs)
+            .padding(spacing.space_s);
         if self.state.history.is_empty() {
             list = list.push(text::body(fl!("history-empty")));
         }
         for (i, h) in self.state.history.iter().enumerate() {
             list = list.push(
                 button::custom(
-                    column![
-                        text::body(&h.expr),
-                        text::title4(&h.result),
-                    ]
-                    .spacing(spacing.space_xxxs),
+                    column![text::body(&h.expr), text::title4(&h.result),]
+                        .spacing(spacing.space_xxxs),
                 )
                 .class(theme::Button::MenuItem)
                 .width(Length::Fill)
@@ -305,7 +327,11 @@ impl cosmic::Application for App {
                 .footer(
                     button::destructive(fl!("history-clear"))
                         .width(Length::Fill)
-                        .on_press(Message::ClearHistory),
+                        .on_press_maybe(if self.state.history.is_empty() {
+                            None
+                        } else {
+                            Some(Message::ClearHistory)
+                        }),
                 ),
         )
     }
@@ -313,7 +339,15 @@ impl cosmic::Application for App {
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         match message {
             Message::CopyResult => {
-                return cosmic::iced::clipboard::write(self.state.result_display());
+                let text = self.state.result_display();
+                let toast = self.toasts.push(Toast::new(fl!("copied")));
+                return Task::batch([
+                    cosmic::iced::clipboard::write(text),
+                    toast.map(cosmic::Action::App),
+                ]);
+            }
+            Message::ToastClose(id) => {
+                self.toasts.remove(id);
             }
             Message::ToggleContext => {
                 let show = !self.core.window.show_context;
@@ -332,21 +366,17 @@ impl cosmic::Application for App {
                 if let Some(m) =
                     key_message(&key, physical, modifiers, self.state.mode, self.state.base)
                 {
-                    if let Message::CopyResult = m {
-                        return cosmic::iced::clipboard::write(self.state.result_display());
-                    }
-                    if let Message::ToggleContext = m {
-                        let show = !self.core.window.show_context;
-                        self.core_mut().set_show_context(show);
-                        return Task::none();
-                    }
-                    reduce(&mut self.state, &m);
-                    self.save();
+                    // Shell-level messages are re-dispatched through update
+                    // so copy-toast and drawer logic live in exactly one place.
+                    return self.update(m);
                 }
             }
             m => {
+                let save = needs_save(&m);
                 reduce(&mut self.state, &m);
-                self.save();
+                if save {
+                    self.save();
+                }
             }
         }
         Task::none()
@@ -382,7 +412,7 @@ impl cosmic::Application for App {
             Mode::Scientific => self.scientific_pad(),
             Mode::Programmer => self.programmer_pad(),
         });
-        root.into()
+        widget::toaster::toaster(&self.toasts, root)
     }
 }
 
@@ -440,13 +470,22 @@ impl App {
     fn display(&self) -> Element<'_, Message> {
         let spacing = theme::spacing();
         let expr = self.state.expression_display();
-        let result = self.state.result_display();
+        // The engine stays libcosmic-free and reports "Error" for logs
+        // and tests; the localized string is substituted at the view
+        // boundary so translators see it.
+        let result = if self.state.error.is_some() {
+            fl!("error")
+        } else {
+            self.state.result_display()
+        };
 
         let mut col = column![].spacing(spacing.space_xxxs).width(Length::Fill);
 
         // expression line + copy button
         let expr_row = row![
-            text::caption(expr).width(Length::Fill).align_x(Horizontal::Right),
+            text::caption(expr)
+                .width(Length::Fill)
+                .align_x(Horizontal::Right),
             button::icon(widget::icon::from_name("edit-copy-symbolic"))
                 .on_press(Message::CopyResult)
                 .description(fl!("copy")),
@@ -463,10 +502,18 @@ impl App {
 
         if let Some((h, d, o, b)) = self.state.base_readout() {
             let readout = row![
-                column![text::caption("HEX"), text::body(h)].align_x(Horizontal::Center).width(Length::Fill),
-                column![text::caption("DEC"), text::body(d)].align_x(Horizontal::Center).width(Length::Fill),
-                column![text::caption("OCT"), text::body(o)].align_x(Horizontal::Center).width(Length::Fill),
-                column![text::caption("BIN"), text::body(b)].align_x(Horizontal::Center).width(Length::Fill),
+                column![text::caption("HEX"), text::body(h)]
+                    .align_x(Horizontal::Center)
+                    .width(Length::Fill),
+                column![text::caption("DEC"), text::body(d)]
+                    .align_x(Horizontal::Center)
+                    .width(Length::Fill),
+                column![text::caption("OCT"), text::body(o)]
+                    .align_x(Horizontal::Center)
+                    .width(Length::Fill),
+                column![text::caption("BIN"), text::body(b)]
+                    .align_x(Horizontal::Center)
+                    .width(Length::Fill),
             ];
             col = col.push(readout);
 
@@ -619,14 +666,20 @@ impl App {
             ]),
         ])
     }
+}
 
+impl App {
     fn programmer_pad(&self) -> Element<'_, Message> {
         use BinOp::*;
         use KeyKind::*;
         use UnaryOp as U;
         let hex = self.state.base == Base::Hex;
         let hex_key = |label: &'static str, d: u8| {
-            key(label, Digit, if hex { Some(Message::Digit(d)) } else { None })
+            key(
+                label,
+                Digit,
+                if hex { Some(Message::Digit(d)) } else { None },
+            )
         };
         // 6 columns; base selector lives in the display readout row
         pad_column(vec![
@@ -679,5 +732,87 @@ impl App {
                 key("=", Equals, Some(Message::Equals)),
             ]),
         ])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use keyboard::key::{Code, Physical};
+
+    fn phys() -> Physical {
+        Physical::Code(Code::KeyH)
+    }
+
+    fn plain(key: keyboard::Key, mode: Mode, base: Base) -> Option<Message> {
+        key_message(&key, phys(), keyboard::Modifiers::empty(), mode, base)
+    }
+
+    fn char_key(c: &str) -> keyboard::Key {
+        keyboard::Key::Character(c.into())
+    }
+
+    #[test]
+    fn keyboard_h_toggles_history() {
+        for c in ["h", "H"] {
+            let m = plain(char_key(c), Mode::Standard, Base::Dec);
+            assert!(matches!(m, Some(Message::ToggleContext)), "{c:?} -> {m:?}");
+            // No conflict with hex entry: `h` is not a hex digit.
+            let m = plain(char_key(c), Mode::Programmer, Base::Hex);
+            assert!(
+                matches!(m, Some(Message::ToggleContext)),
+                "hex {c:?} -> {m:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn keyboard_hex_digits_mode_scoped() {
+        let m = plain(char_key("a"), Mode::Programmer, Base::Hex);
+        assert!(matches!(m, Some(Message::Digit(10))), "{m:?}");
+        // Outside programmer-hex, `a` types nothing.
+        assert!(plain(char_key("a"), Mode::Standard, Base::Dec).is_none());
+        assert!(plain(char_key("a"), Mode::Programmer, Base::Dec).is_none());
+    }
+
+    #[test]
+    fn keyboard_ctrl_insert_copies() {
+        let m = key_message(
+            &keyboard::Key::Named(keyboard::key::Named::Insert),
+            phys(),
+            keyboard::Modifiers::CTRL,
+            Mode::Standard,
+            Base::Dec,
+        );
+        assert!(matches!(m, Some(Message::CopyResult)), "{m:?}");
+    }
+
+    #[test]
+    fn keyboard_caret_is_mode_scoped() {
+        let m = plain(char_key("^"), Mode::Scientific, Base::Dec);
+        assert!(matches!(m, Some(Message::Binary(BinOp::Pow))), "{m:?}");
+        let m = plain(char_key("^"), Mode::Programmer, Base::Dec);
+        assert!(matches!(m, Some(Message::Binary(BinOp::Xor))), "{m:?}");
+    }
+
+    #[test]
+    fn save_gating_pins_persisted_state_policy() {
+        // Persisted state = mode, angle, history: only these mutate it.
+        for m in [Message::Equals, Message::ClearHistory, Message::ToggleAngle] {
+            assert!(needs_save(&m), "{m:?} must save");
+        }
+        for m in [
+            Message::Digit(1),
+            Message::Dot,
+            Message::Backspace,
+            Message::ClearEntry,
+            Message::ClearAll,
+            Message::Recall(0),
+            Message::CopyResult,
+            Message::ToggleContext,
+            Message::SetBase(Base::Hex),
+        ] {
+            assert!(!needs_save(&m), "{m:?} must not save");
+        }
     }
 }

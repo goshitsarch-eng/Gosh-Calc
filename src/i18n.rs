@@ -4,9 +4,7 @@
 //! Localization via i18n-embed + Fluent, same pattern as COSMIC apps.
 
 use i18n_embed::fluent::{fluent_language_loader, FluentLanguageLoader};
-use i18n_embed::{
-    DefaultLocalizer, DesktopLanguageRequester, LanguageLoader, Localizer,
-};
+use i18n_embed::{DefaultLocalizer, DesktopLanguageRequester, LanguageLoader, Localizer};
 use rust_embed::RustEmbed;
 use std::sync::LazyLock;
 

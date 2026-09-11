@@ -151,8 +151,10 @@ fn flow_programmer() {
     );
     assert_eq!(s.result_display(), "100"); // 0xFF + 1 = 0x100
     let (h, d, o, b) = s.base_readout().unwrap();
-    assert_eq!((h.as_str(), d.as_str(), o.as_str(), b.as_str()),
-        ("100", "256", "400", "100000000"));
+    assert_eq!(
+        (h.as_str(), d.as_str(), o.as_str(), b.as_str()),
+        ("100", "256", "400", "100000000")
+    );
 
     run(&mut s, &[Msg::SetBase(Base::Dec)]);
     assert_eq!(s.result_display(), "256");
@@ -182,10 +184,16 @@ fn flow_error_recovery() {
 fn flow_angle_toggle() {
     let mut s = CalcState::new();
     s.set_mode(Mode::Scientific);
-    run(&mut s, &[Msg::Digit(9), Msg::Digit(0), Msg::Unary(UnaryOp::Sin)]);
+    run(
+        &mut s,
+        &[Msg::Digit(9), Msg::Digit(0), Msg::Unary(UnaryOp::Sin)],
+    );
     assert_eq!(s.result_display(), "1"); // sin(90deg)
     run(&mut s, &[Msg::ToggleAngle, Msg::ClearAll]);
-    run(&mut s, &[Msg::Digit(9), Msg::Digit(0), Msg::Unary(UnaryOp::Sin)]);
+    run(
+        &mut s,
+        &[Msg::Digit(9), Msg::Digit(0), Msg::Unary(UnaryOp::Sin)],
+    );
     assert_eq!(s.result_display(), "0.893996663601"); // sin(90 rad)
 }
 
@@ -193,10 +201,41 @@ fn flow_angle_toggle() {
 #[test]
 fn flow_history_clear() {
     let mut s = CalcState::new();
-    run(&mut s, &[Msg::Digit(2), Msg::Binary(BinOp::Add), Msg::Digit(2), Msg::Equals]);
+    run(
+        &mut s,
+        &[
+            Msg::Digit(2),
+            Msg::Binary(BinOp::Add),
+            Msg::Digit(2),
+            Msg::Equals,
+        ],
+    );
     assert_eq!(s.history.len(), 1);
     run(&mut s, &[Msg::ClearHistory]);
     assert!(s.history.is_empty());
+}
+
+/// Flow: EE scientific-notation entry, then Ans recall into a new calc.
+#[test]
+fn flow_exp_and_ans() {
+    let mut s = CalcState::new();
+    s.set_mode(Mode::Scientific);
+    run(
+        &mut s,
+        &[Msg::Digit(5), Msg::Exp, Msg::Digit(3), Msg::Equals],
+    );
+    assert_eq!(s.result_display(), "5000"); // 5e3
+    run(
+        &mut s,
+        &[
+            Msg::ClearAll,
+            Msg::Ans,
+            Msg::Binary(BinOp::Mul),
+            Msg::Digit(2),
+            Msg::Equals,
+        ],
+    );
+    assert_eq!(s.result_display(), "10000"); // Ans * 2
 }
 
 /// Flow: percent in context.
