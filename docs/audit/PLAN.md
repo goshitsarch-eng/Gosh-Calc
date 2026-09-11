@@ -20,8 +20,8 @@ Owner: lead. Ordered so the tree builds after each item.
 | T1 | P2 | tests | EE/Ans flows untested | regression tests | integration tests | cargo test | done |
 | B13 | P3 | history | bare `=` records no-op history dupes | no record | skip record when empty+no repeat | new test | done |
 | RT | P1 | red team | fresh full pass after fixes | no P0/P1/P2 | fix findings | new PLAN rows | done |
-| FLAT | P1 | packaging | force-clean rebuild + smoke on branch | green | run | logs | todo |
-| REPORT | P2 | docs | final report | REPORT.md | write | review | todo |
+| FLAT | P1 | packaging | force-clean rebuild + smoke on branch | green | run | logs | done |
+| REPORT | P2 | docs | final report | REPORT.md | write | review | done |
 
 P0 count: 0 (no crashes, corruption, or unusable states found —
 error paths all recover; fuzz tests pass).
