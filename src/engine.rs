@@ -719,6 +719,13 @@ impl CalcState {
         self.fresh = true;
         self.evaluated = true;
 
+        // Bare `=` with nothing committed and no repeat applied computes
+        // nothing: update the display state but do not spam history with
+        // duplicate no-op records.
+        if toks.is_empty() && !repeated {
+            return None;
+        }
+
         let rec = (expr_str, result_str);
         self.history.insert(
             0,
@@ -1681,6 +1688,21 @@ mod tests {
             .history
             .iter()
             .all(|h| h.expr.len() <= MAX_PERSIST_STR && h.result.len() <= MAX_PERSIST_STR));
+    }
+
+    #[test]
+    fn bare_equals_records_no_history() {
+        let mut s = st();
+        s.equals();
+        s.equals();
+        assert!(s.history.is_empty());
+        assert_eq!(s.result_display(), "0");
+        // A real computation still records, and repeat-equals keeps
+        // recording one entry per press.
+        seq(&mut s, "2+3=");
+        assert_eq!(s.history.len(), 1);
+        s.equals();
+        assert_eq!(s.history.len(), 2);
     }
 
     #[test]

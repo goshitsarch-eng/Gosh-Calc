@@ -84,6 +84,13 @@ ux.md drew 6x6/5-row sketches; code ships standard 6x4, scientific
 Docs lived only in `docs/design/`. Added root `README.md` (build,
 run, shortcuts, Flatpak, features) consistent with metainfo.
 
+## B13 — bare `=` spammed history (P3, fixed, red-team find)
+
+Pressing `=` on an empty calculator appended a no-op record every
+press. Fix: `equals()` updates display state but returns `None`
+without recording when nothing is committed and no repeat applied.
+Test: `bare_equals_records_no_history`.
+
 ## Non-bugs (investigated, legitimate)
 
 - `i18n.rs` `.expect()` on embedded fallback load: build-time asset

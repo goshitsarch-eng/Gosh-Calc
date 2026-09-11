@@ -18,7 +18,8 @@ Owner: lead. Ordered so the tree builds after each item.
 | B12 | P3 | docs | no root README | README.md | add | review | done |
 | V1 | P2 | verify | verify.sh lacks desktop/metainfo gates | extended script | add gates | run script | done |
 | T1 | P2 | tests | EE/Ans flows untested | regression tests | integration tests | cargo test | done |
-| RT | P1 | red team | fresh full pass after fixes | no P0/P1/P2 | fix findings | new PLAN rows | todo |
+| B13 | P3 | history | bare `=` records no-op history dupes | no record | skip record when empty+no repeat | new test | done |
+| RT | P1 | red team | fresh full pass after fixes | no P0/P1/P2 | fix findings | new PLAN rows | done |
 | FLAT | P1 | packaging | force-clean rebuild + smoke on branch | green | run | logs | todo |
 | REPORT | P2 | docs | final report | REPORT.md | write | review | todo |
 
