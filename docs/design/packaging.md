@@ -4,7 +4,7 @@ Owner: packaging & QA teammate. Covers the Flatpak, tests, scripts, CI.
 
 ## Flatpak
 
-Manifest: `flatpak/dev.goshapps.calc.yaml`
+Manifest: `flatpak/dev.goshapps.calc.yml`
 
 - runtime: `org.freedesktop.Platform` // 25.08 (installed locally)
 - sdk: `org.freedesktop.Sdk` // 25.08

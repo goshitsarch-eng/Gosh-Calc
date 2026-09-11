@@ -1,0 +1,48 @@
+app-id: dev.goshapps.calc
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: gosh-calc
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/gosh-calc/cargo-home
+    CARGO_NET_OFFLINE: "true"
+modules:
+  - name: gosh-calc
+    buildsystem: simple
+    build-commands:
+      - mkdir -p .cargo
+      - cp cargo/config .cargo/config.toml
+      - cargo build --release --offline
+      - install -Dm755 target/release/gosh-calc /app/bin/gosh-calc
+      - install -Dm644 resources/dev.goshapps.calc.desktop
+        /app/share/applications/dev.goshapps.calc.desktop
+      - install -Dm644 resources/dev.goshapps.calc.metainfo.xml
+        /app/share/metainfo/dev.goshapps.calc.metainfo.xml
+      - install -Dm644 resources/icons/hicolor/scalable/apps/dev.goshapps.calc.svg
+        /app/share/icons/hicolor/scalable/apps/dev.goshapps.calc.svg
+    sources:
+      - type: dir
+        path: ../src
+        dest: src
+      - type: dir
+        path: ../i18n
+        dest: i18n
+      - type: dir
+        path: ../resources
+        dest: resources
+      - type: file
+        path: ../Cargo.toml
+      - type: file
+        path: ../Cargo.lock
+      - type: file
+        path: ../i18n.toml
+      - cargo-sources.json

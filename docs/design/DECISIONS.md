@@ -94,3 +94,35 @@ Why: neither is in the spec; single-instance adds zbus blocking API
 surface inside the sandbox for marginal benefit on a calculator; memory
 keys are a candidate fast-follow recorded here rather than silently
 absent.
+
+## D9: patched `flatpak-cargo-generator.py` for submodule fetch
+
+Question: the generator's `git fetch origin <commit>` failed on
+libcosmic because fetch recursed into the `iced` submodule whose pinned
+commit is not servable by its remote (`not our ref`).
+
+Options considered: vendor the git repos by hand; patch the generator.
+
+Choice: patched the vendored generator: `fetch --no-recurse-submodules`
+plus a tolerated `git submodule update` failure. Submodule contents are
+never cargo dependencies — cargo-sources only needs `Cargo.toml` files
+of workspace members, which live in the parent repo.
+
+Note: flatpak-builder itself *can* fetch the submodule (it fetches the
+full repo including all refs, so the pinned commit resolves), so the
+patch is only needed on the generation side.
+
+## D10: `--disable-rofiles-fuse` in local flatpak builds
+
+A stale `rofiles-fuse` mount + FUSE restrictions on this host made
+`flatpak-builder` fail with `failed to access mountpoint`. All build
+invocations use `--disable-rofiles-fuse`; it only disables the
+hardlink safety layer, not correctness of the output.
+
+## D11: vendored cargo config lands via `.cargo/config.toml`
+
+`flatpak-cargo-generator` emits `cargo/config` + `cargo/vendor`. The
+manifest copies the config to `.cargo/config.toml` in the build root so
+`directory = "cargo/vendor"` resolves correctly, and sets `CARGO_HOME`
+to a separate `cargo-home` dir so the vendored config is not
+misinterpreted as a home config.

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Gosh Calc
+Comment=A calculator for the COSMIC desktop
+Exec=gosh-calc
+Icon=dev.goshapps.calc
+Type=Application
+Categories=Utility;Science;Math;
+Keywords=calculator;math;arithmetic;scientific;programmer;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

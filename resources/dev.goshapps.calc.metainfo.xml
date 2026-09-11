@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.goshapps.calc</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Gosh Calc</name>
+  <summary>A calculator for the COSMIC desktop</summary>
+  <description>
+    <p>
+      Gosh Calc is a calculator application built with libcosmic. It
+      provides standard, scientific, and programmer modes, full keyboard
+      support, and persistent history.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Standard arithmetic with chained evaluation</li>
+      <li>Scientific functions, powers, roots, and trigonometry</li>
+      <li>Programmer mode with hex, decimal, octal, and binary</li>
+      <li>Bitwise operations and shifts</li>
+      <li>Persistent calculation history</li>
+      <li>Light and dark theme integration</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">dev.goshapps.calc.desktop</launchable>
+  <developer>
+    <id>dev.goshapps</id>
+    <name>goshitsarch-eng</name>
+  </developer>
+  <url type="homepage">https://github.com/goshitsarch-eng/Gosh-Calc</url>
+  <url type="bugtracker">https://github.com/goshitsarch-eng/Gosh-Calc/issues</url>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-09-11">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+  <provides>
+    <binary>gosh-calc</binary>
+  </provides>
+</component>
