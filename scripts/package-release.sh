@@ -124,6 +124,7 @@ if [ "$WITH_FLATPAK" -eq 1 ]; then
     trap 'rm -rf "$WORK"' EXIT
     echo "package-release: flatpak-builder ($ARCH)"
     flatpak-builder --force-clean --disable-rofiles-fuse --user \
+        --default-branch=stable \
         --repo="$WORK/repo" "$WORK/build-dir" "flatpak/$APP_ID.yml"
     rm -f "$OUT/$FLATPAK"
     flatpak build-bundle "$WORK/repo" "$OUT/$FLATPAK" "$APP_ID" stable
