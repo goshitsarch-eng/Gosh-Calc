@@ -93,11 +93,14 @@ jobs:
         with:
           shared-key: release-${{ matrix.arch }}
 
+      # elfutils provides eu-strip, which flatpak-builder needs
+      # for its debug-strip finish phase.
       - name: Install system and Flatpak dependencies
         run: >
           sudo apt-get update &&
           sudo apt-get install -y --no-install-recommends
           pkg-config libwayland-dev libxkbcommon-dev flatpak flatpak-builder
+          elfutils
 
       - name: Install Freedesktop SDK
         run: |

@@ -80,7 +80,7 @@ fi
 need() { command -v "$1" >/dev/null 2>&1 || { echo "package-release: missing required tool: $1" >&2; exit 1; }; }
 need cargo; need file; need sha256sum; need tar; need strip
 if [ "$WITH_FLATPAK" -eq 1 ]; then
-    need flatpak; need flatpak-builder
+    need flatpak; need flatpak-builder; need eu-strip
 fi
 python3 -c 'import json; json.load(open("flatpak/cargo-sources.json"))' \
     || { echo "package-release: flatpak/cargo-sources.json missing or invalid; regenerate it (see CONTRIBUTING.md)" >&2; exit 1; }
