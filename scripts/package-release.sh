@@ -91,7 +91,10 @@ cargo build --release --locked
 
 RELEASE_BIN="target/release/$BIN"
 [ -x "$RELEASE_BIN" ] || { echo "package-release: $RELEASE_BIN not found after build" >&2; exit 1; }
-if ! file "$RELEASE_BIN" | grep -q "$EXPECT_FILE_TOKEN"; then
+# NOTE: grep without -q (output to /dev/null) so it drains the pipe;
+# `producer | grep -q` under `set -o pipefail` lets SIGPIPE kill the
+# producer and fail the check spuriously (seen with tar in publish).
+if ! file "$RELEASE_BIN" | grep "$EXPECT_FILE_TOKEN" >/dev/null; then
     echo "package-release: arch mismatch: $(file "$RELEASE_BIN")" >&2
     echo "package-release: expected file(1) output to contain '$EXPECT_FILE_TOKEN'" >&2
     exit 1

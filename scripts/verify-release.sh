@@ -72,13 +72,13 @@ for ARCH in "${ARCHES[@]}"; do
     if [ -s "$DIR/$TARBALL" ]; then
         if ! tar tzf "$DIR/$TARBALL" >/dev/null 2>&1; then
             complain "corrupt tarball: $TARBALL"
-        elif ! tar tzf "$DIR/$TARBALL" 2>/dev/null | grep -qx "$BIN-$VERSION-$ARCH/$BIN"; then
+        elif ! tar tzf "$DIR/$TARBALL" 2>/dev/null | grep -x "$BIN-$VERSION-$ARCH/$BIN" >/dev/null; then
             complain "tarball $TARBALL lacks $BIN-$VERSION-$ARCH/$BIN"
         else
             TMP="$(mktemp -d -t gosh-calc-verify.XXXXXX)"
             tar xzf "$DIR/$TARBALL" -C "$TMP" "$BIN-$VERSION-$ARCH/$BIN"
             WANT="$(token_for "$ARCH")"
-            if ! file "$TMP/$BIN-$VERSION-$ARCH/$BIN" | grep -q "$WANT"; then
+            if ! file "$TMP/$BIN-$VERSION-$ARCH/$BIN" | grep "$WANT" >/dev/null; then
                 complain "arch mismatch in $TARBALL: $(file "$TMP/$BIN-$VERSION-$ARCH/$BIN") (want '$WANT')"
             else
                 echo "verify-release: arch OK ($ARCH): $(file -b "$TMP/$BIN-$VERSION-$ARCH/$BIN")"
