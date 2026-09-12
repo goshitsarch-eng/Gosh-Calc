@@ -24,6 +24,7 @@ Pipeline commits on `main` (all pushed this session):
 | `b7dd32f` | `--default-branch=stable` for flatpak-builder |
 | `fd1031d` | Install `librsvg2-common` (SVG loader) on build legs |
 | `0307332` | Drain `grep` pipes instead of `-q` under `pipefail` |
+| `7575548` | This push-to-green report (`docs/release/REPORT.md`) |
 
 ## Test tag
 
@@ -41,13 +42,14 @@ artifacts are genuine release candidates.
 
 ## Runs
 
-CI (all green, one per `main` push):
+CI (all green, 6/6, one per `main` push):
 
 - https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34663068266 (success)
 - https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34664062722 (success)
 - https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34664823622 (success)
 - https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34665588351 (success)
 - https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34666370811 (success)
+- https://github.com/goshitsarch-eng/Gosh-Calc/actions/runs/34667136038 (success, HEAD `7575548`)
 
 Release (tag `v0.1.0-rc.1`):
 

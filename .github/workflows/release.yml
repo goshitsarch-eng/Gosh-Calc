@@ -124,6 +124,7 @@ jobs:
           name: dist-${{ matrix.arch }}
           path: dist/
           if-no-files-found: error
+          overwrite: true # allow "Re-run all jobs" recovery without name collision
 
   publish:
     name: Publish GitHub release
