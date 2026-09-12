@@ -1,66 +1,113 @@
 # Gosh Calc
 
-A calculator for the COSMIC desktop, built with libcosmic.
+A calculator for the COSMIC desktop, built with libcosmic. It has
+standard, scientific, and programmer modes, full keyboard support,
+and a history drawer that persists across launches.
 
-Three modes (nav bar, persisted across launches):
+## AI-assisted development
+
+I use AI tools to speed up development, but I work
+architecture-first. I define the architecture, build and review the
+implementation, refactor it, and repeat the process as the project
+evolves.
+
+I treat AI as a junior developer: useful for implementation and
+exploration, but not the final authority. I remain responsible for
+the architecture, technical decisions, and quality of the code.
+
+I'm including this notice so you can make an informed choice about
+whether AI-assisted software is something you're comfortable using.
+
+## Features
+
+Three modes in the nav bar (persisted across launches):
 
 - **Standard** — arithmetic with correct precedence, chained and
   repeat-equals, context-aware percent, 1/x, x², √.
-- **Scientific** — parens (auto-close at `=`), powers/roots
-  (x² x³ xʸ y√x √ ∛), log/ln/eˣ/10ˣ, factorial, trig + inverses with
-  DEG/RAD toggle, π/e constants, EE scientific entry, Ans recall.
+- **Scientific** — parens (auto-close at `=`), powers and roots
+  (x² x³ xʸ y√x √ ∛), log/ln/eˣ/10ˣ, factorial, trig plus
+  inverses with a DEG/RAD toggle, π/e constants, EE entry for
+  scientific notation, Ans recall.
 - **Programmer** — HEX/DEC/OCT/BIN switching with A–F keys,
-  simultaneous four-base readout, AND/OR/XOR/NOT, shifts, modulo,
-  exact 64-bit two's-complement integers.
+  all four bases shown at once, AND/OR/XOR/NOT, shifts, modulo,
+  exact 64-bit integers.
 
-History drawer (header button): newest-first list, click to recall,
-clear button, persisted (cap 100). Copy button + Ctrl+C copies the
-result with a toast confirmation. Errors show `Error` and any digit
-restarts fresh — the app never panics on bad input.
+Every mode has an expression line plus a live result line. The
+header button opens a history drawer: newest first, click an
+entry to reuse its result, clear button at the bottom, persisted
+(cap 100). The copy button (or Ctrl+C) copies the result and
+shows a confirmation. Bad input shows `Error` and any digit
+starts fresh — the app doesn't crash on it.
 
-## Build
+## Install
 
-```sh
-cargo build
-cargo test
-```
-
-Pinned libcosmic rev (see `Cargo.toml`) + `Cargo.lock`; release
-profile uses thin LTO.
-
-## Run
+Build and install the Flatpak from this repo:
 
 ```sh
-cargo run
+flatpak-builder --user --install --force-clean build-dir \
+  flatpak/dev.goshapps.calc.yml
+flatpak run dev.goshapps.calc
 ```
 
-No COSMIC session required: settings persist via the cosmic-config
-file backend and theming follows the settings portal when present.
+You need `flatpak-builder` plus the Freedesktop 25.08 platform
+and SDK. The sandbox grants are minimal: Wayland, fallback X11,
+IPC, and DRI. No network, no filesystem, no notifications.
+
+## Use
+
+Pick a mode in the nav bar and type or click. Everything works
+from the keyboard without clicking anything first. Mode, angle
+unit, and history persist; the HEX/DEC/OCT/BIN selection resets
+to DEC on relaunch.
+
+Settings live in your config dir via cosmic-config's file
+backend, so the app also runs on non-COSMIC desktops, and
+theming follows the settings portal when one is present.
 
 ## Keyboard
 
 `0-9` digits (row + numpad) · `a-f` hex digits in programmer HEX ·
-`+ - * /` ops · `^` power (XOR in programmer) · `%` percent/modulo ·
-`()` parens · `.`/`,` decimal · `!` factorial · `& | < > ~` bitwise ·
-`p` π (scientific) · Enter/`=` evaluate · Backspace delete ·
+`+ - * /` ops · `^` power (XOR in programmer) · `%` percent in
+standard/scientific, modulo in programmer · `()` parens ·
+`.`/`,` decimal · `!` factorial · `& | < > ~` bitwise ops ·
+`p` π in scientific · Enter/`=` evaluate · Backspace delete ·
 Delete clear entry · Esc clear all · Ctrl+C / Ctrl+Insert copy ·
 `h` or Ctrl+H history.
 
-## Flatpak
+## Limitations
+
+- No memory (M+/MR/MC) keys and no single-instance mode. Both
+  are deliberately deferred (see `docs/design/DECISIONS.md`, D8).
+- Unary functions (sin, √, …) apply to the entry immediately,
+  so history shows the computed operand rather than the symbolic
+  expression.
+
+## Development
 
 ```sh
-scripts/verify.sh   # fmt + clippy + test + flatpak build + smoke
+cargo build
+cargo test
+cargo run
 ```
 
-Finish-args are minimal (wayland, fallback-x11, ipc, dri). Regenerate
-`flatpak/cargo-sources.json` after `Cargo.lock` changes:
+`scripts/verify.sh` runs the full gate: fmt, clippy, tests,
+desktop/metainfo validation, Flatpak build, and a headless
+smoke test. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+checks, Flatpak rebuild notes, and troubleshooting.
+
+After changing `Cargo.lock`, regenerate the vendored Flatpak
+sources:
 
 ```sh
 python3 flatpak/flatpak-cargo-generator.py Cargo.lock -o flatpak/cargo-sources.json
 ```
 
-## Known limitations
+## Contributing
 
-No memory (M+/MR/MC) keys and no single-instance — deferred by design
-(see `docs/design/DECISIONS.md` D8). The numeric base (HEX/…) resets
-to DEC on relaunch; mode, angle unit, and history persist.
+Bug reports and pull requests are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to set up and verify
+changes.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

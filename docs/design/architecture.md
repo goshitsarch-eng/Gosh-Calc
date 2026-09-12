@@ -17,25 +17,27 @@ tests/         — integration tests driving messages through the app
 
 The engine never imports libcosmic. `main.rs` translates `Message`s
 into engine calls and formats engine output for the view. All
-message-handling logic lives in a free function
-`reduce(state: &mut CalcState, msg: &InputMsg)` so tests can drive the
+engine-bound message handling lives in a free function
+`reduce(state: &mut CalcState, msg: &Message)` so tests can drive the
 whole app state machine without constructing a `cosmic::Core`.
+Clipboard, drawer, toast, and keyboard dispatch stay in `update()`.
 
 ## libcosmic Application mapping
 
 - `App` holds: `core: Core`, `nav_model: nav_bar::Model`,
-  `state: CalcState`, `config: AppConfig`, `config_store: Config`.
+  `state: CalcState`, `store: Option<Config>`, `toasts: Toasts<Message>`.
 - `init` loads config (mode, angle unit, history) and builds the nav
   model (Standard / Scientific / Programmer).
-- `on_nav_select` maps nav ids -> `Mode`.
+- `on_nav_select` maps nav ids -> `Mode` (there is no `SetMode`
+  message; mode travels via nav selection).
 - `header_end` -> history drawer toggle button.
 - `context_drawer` -> history list when `show_context` is set.
 - `subscription` -> `iced::event::listen_with` for keyboard input.
-- Messages: `Digit`, `Dot`, `Binary(BinOp)`, `Unary(UnaryOp)`,
-  `Percent`, `Equals`, `Backspace`, `ClearEntry`, `ClearAll`,
-  `ToggleSign`, `SetMode`, `SetBase`, `ToggleAngle`, `Constant`,
-  `RecallHistory(usize)`, `ClearHistory`, `CopyResult`, `ToggleContext`,
-  `Key(KeyBind)`, `Surface`.
+- Messages: `Digit`, `Dot`, `Exp`, `Ans`, `Binary(BinOp)`,
+  `Unary(UnaryOp)`, `Percent`, `Equals`, `Backspace`, `ClearEntry`,
+  `ClearAll`, `ToggleSign`, `SetBase`, `ToggleAngle`, `Constant`,
+  `LParen`, `RParen`, `Recall(usize)`, `ClearHistory`, `CopyResult`,
+  `ToggleContext`, `ToastClose`, `Surface`, `KeyPressed {..}`.
 
 ## Engine model
 
@@ -49,14 +51,15 @@ CalcState {
   expr: Vec<Token>,         // committed tokens
   entry: String,            // raw operand text being typed (current base)
   error: Option<CalcError>,
-  last_binop: Option<(BinOp, Value)>,  // for repeat-equals
+  repeat: Option<(BinOp, Value)>,  // for repeat-equals
   fresh: bool,              // entry starts a new number (post-=, post-op)
 }
 ```
 
-`Value = Float(f64) | Int(i64)` — Float for standard/scientific, Int
-(exact 64-bit two's complement) for programmer. Mixing promotes to
-Float; programmer-only ops require Int or get a truncated conversion.
+`Value = F(f64) | I(i64)` — float for standard/scientific, exact
+64-bit two's complement for programmer. A binary op takes the
+integer path only when both operands are `I`; otherwise it takes
+the float path. Bitwise/shift ops always convert to `i64`.
 
 ### Evaluation
 

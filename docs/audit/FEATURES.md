@@ -1,5 +1,11 @@
 # Feature matrix — Gosh Calc
 
+> Historical note (2026-09-12): this matrix captures the pre-fix
+> baseline. Its `partial` rows (copy feedback, save cost, error
+> localization, keyboard gaps, clear-button arming) were all fixed;
+> see `REPORT.md` for the verified end state. Do not read it as
+> current behavior.
+
 Status key: working / partial / missing. Every row traced
 UI → Message → update/reduce → engine → visible feedback.
 

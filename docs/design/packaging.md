@@ -1,6 +1,6 @@
 # Gosh-Calc Packaging & QA
 
-Owner: packaging & QA teammate. Covers the Flatpak, tests, scripts, CI.
+Owner: packaging & QA teammate. Covers the Flatpak, tests, scripts.
 
 ## Flatpak
 
@@ -29,7 +29,7 @@ Manifest: `flatpak/dev.goshapps.calc.yml`
 
 Files:
 
-- `flatpak/dev.goshapps.calc.yaml` — manifest
+- `flatpak/dev.goshapps.calc.yml` — manifest
 - `flatpak/cargo-sources.json` — vendored cargo deps (generated)
 - `resources/dev.goshapps.calc.desktop` — desktop entry
 - `resources/dev.goshapps.calc.metainfo.xml` — AppStream metainfo
@@ -46,15 +46,17 @@ its own XDG dirs.
 
 - `src/engine.rs` unit tests (`cargo test`): every operation in every
   mode, precedence, parens, percent contexts, repeat-equals, base
-  conversion, bitwise ops, error paths, `fmt_f64` edge cases, and
-  property-style checks (a+(b−b)=a, x/x=1, etc.).
-- `tests/integration.rs`: drives `reduce()` through full user flows —
-  typed digits -> evaluate -> history -> recall -> mode switch -> base
-  switch — asserting on `CalcState`, not pixels.
-- `scripts/smoke.sh`: builds the Flatpak with flatpak-builder, then
-  launches it headless (weston headless backend or Xvfb + x11 socket),
-  checks it stays alive for ~10 s without stderr errors, then kills it
-  and checks exit.
+  conversion, bitwise ops, error paths, `fmt_f64` edge cases, plus
+  robustness tests (huge operands, hostile persisted history,
+  500-step state churn).
+- `tests/integration.rs`: drives full user flows through the same
+  engine calls the UI uses — typed digits -> evaluate -> history ->
+  recall -> mode switch -> base switch — asserting on `CalcState`,
+  not pixels.
+- `scripts/smoke.sh`: installs the already-built Flatpak, then
+  launches it headless (existing Wayland session, else a headless
+  weston instance, else the existing X11 display), checks it stays
+  alive for ~10 s with no panic/fatal in the log, then kills it.
 
 ## scripts/verify.sh
 
@@ -63,9 +65,11 @@ Runs, in order:
 1. `cargo fmt --check` (if rustfmt present)
 2. `cargo clippy --all-targets -- -D warnings`
 3. `cargo test`
-4. `flatpak-builder --force-clean` build (skipped with a warning when
+4. `desktop-file-validate` and `appstreamcli validate` (each skipped
+   with a warning when unavailable)
+5. `flatpak-builder --force-clean` build (skipped with a warning when
    flatpak-builder or the SDK is unavailable)
-5. `scripts/smoke.sh` (same availability gate)
+6. `scripts/smoke.sh` (same availability gate)
 
 `verify.sh` exits nonzero on any failure; warnings are printed for
 skipped stages so CI vs. local runs are distinguishable.

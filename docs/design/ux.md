@@ -94,8 +94,9 @@ keys outside the current base are disabled.
 ## History
 
 Context drawer (`app::ContextDrawer`) titled "History", toggled from the
-header-end clock-rotate icon button. Entries list `expression = result`
-newest first; clicking an entry recalls the result into the entry field
+header-end recent-documents icon button. Entries list newest first,
+each showing the expression on one line and its result below it;
+clicking an entry recalls the result into the entry field
 and closes nothing (drawer stays open). Footer: "Clear history" button.
 History persists across launches (cap 100 entries).
 
@@ -116,8 +117,9 @@ listening on key presses (no focused widget required):
 
 ## Copy
 
-Copy button in the display area (content-copy icon) + Ctrl+C writes the
-current result/entry to the clipboard via `iced::clipboard::write`.
+Copy button in the display area (edit-copy icon) + Ctrl+C writes the
+current result/entry to the clipboard via `iced::clipboard::write`,
+with a toast confirming the copy.
 
 ## Settings & persistence
 
