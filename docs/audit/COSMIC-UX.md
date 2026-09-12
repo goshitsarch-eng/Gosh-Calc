@@ -10,10 +10,15 @@ Verified: code review + launch.
 
 ## Navigation
 
-Current: `nav_bar::Model` with three modes, persisted selection,
-`on_nav_select` converts entry across domains. Pattern: canonical
-COSMIC section nav (D3). No change — correct usage, including
-nav-toggle shortcut for free.
+Was: `nav_bar::Model` with three modes (canonical COSMIC section
+nav, D3). Problem (B14): at calculator widths the sidebar is
+condensed behind an icon-only toggle, and the `navbar-*-symbolic`
+icons exist in no fallback theme — with the Cosmic icon theme
+uninstalled there was no visible mode switch at all. Now: a
+text-button Standard/Scientific/Programmer row at the top of the
+content view (`Message::SetMode`, persisted selection, entry
+conversion unchanged). No nav sidebar; the header keeps title +
+history toggle + window controls.
 
 ## Context drawer (history)
 
@@ -25,13 +30,16 @@ Changes: disable footer when empty.
 
 ## Keypads
 
-Current: hand-rolled grids via `button::custom` + Fill sizing +
-theme classes (Standard digits/actions, Text operators, Suggested
-`=`) — matches ux spec §Keypads and uses COSMIC spacing/typography
-throughout. No libcosmic keypad widget exists, so hand-rolled grid
-is justified (no duplication of provided components). Disabled keys
-(A–F outside HEX, `.` in programmer) render inert via
-`on_press_maybe(None)` — correct. No change except toast wrapper.
+Current: hand-rolled grids via `button::custom` + Fill sizing.
+Was: Standard digits/actions, Text (transparent) operators — looked
+broken next to real pills (B15). Now: every key a Standard pill
+(`=` Suggested); named functions use the smaller `body` label so
+multi-glyph captions fit narrow keys, same key same size in every
+mode. Uses COSMIC spacing/typography throughout. No libcosmic
+keypad widget exists, so hand-rolled grid is justified (no
+duplication of provided components). Disabled keys (A–F outside
+HEX, `.` in programmer) render inert via `on_press_maybe(None)` —
+correct.
 
 ## Feedback: toasts (B2)
 
@@ -58,13 +66,14 @@ no loading state needed (fully synchronous engine). All present.
 
 ## Sizing / responsive
 
-Grids use Fill + theme spacing; window resizable from 430×560
-default. Scientific 8-column rows are dense at minimum width but
-labels are short (≤6 glyphs). No minimum-size API in this libcosmic
-rev for this shell shape — not forced. Headless launch covered the
-default size only; narrow/wide resize behavior rests on Fill-based
-layout (no fixed pixel widths anywhere in the pads) and remains a
-manual check on a live desktop.
+Grids use Fill + theme spacing. Was: one 430×560 window for
+4/8/6-column pads — scientific labels clipped, keys bloated in
+standard (B15). Now: per-mode window sizes (standard 400×580,
+scientific 640×600, programmer 560×660), applied at boot from the
+persisted mode and on every mode switch via `window::resize`
+(ignored when maximized/tiled; Fill layout adapts). No fixed pixel
+widths anywhere in the pads. Verified with live screenshots of all
+three modes at their pinned sizes.
 
 ## Keyboard / focus / a11y
 

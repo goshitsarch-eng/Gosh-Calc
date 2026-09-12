@@ -91,6 +91,48 @@ press. Fix: `equals()` updates display state but returns `None`
 without recording when nothing is committed and no repeat applied.
 Test: `bare_equals_records_no_history`.
 
+## B14 — window controls and mode switch invisible (P1, fixed)
+
+On systems where the configured icon theme is not installed (e.g.
+CosmicTk `icon_theme = "Pop"` with no Pop theme on disk),
+libcosmic renders every missing icon as an empty SVG, so all
+icon-only controls — header minimize/maximize/close, nav toggle,
+history, copy — were invisible but still clickable. Worse, the mode
+switch lived in a nav sidebar that is condensed away at calculator
+widths behind the `navbar-*-symbolic` toggle, and those
+COSMIC-specific icons exist in no fallback theme, so there was no
+visible way to change modes at all.
+Fix: (1) `main()` probes the XDG icon dirs at startup and, when the
+configured theme is missing (or unsafe), overrides via
+`Settings::default_icon_theme` with the first installed theme from
+Cosmic → Adwaita → hicolor, logging a warning; (2) the nav sidebar
+is removed in favor of a text-button Standard/Scientific/Programmer
+row at the top of the content view (`Message::SetMode`, persisted
+via the existing `needs_save` path), which renders with zero icon
+dependence. Tests: `icon_theme_*`, `reduce_set_mode_switches_pads`,
+updated save-gating test. Verified with live screenshots of all
+three modes (controls + switcher visible).
+
+## B15 — dreadful keypad sizing, inconsistent across modes (P1, fixed)
+
+Operator/function keys used `Button::Text` (transparent), so half of
+every pad looked like floating labels next to real pills. One fixed
+430px window served 4/8/6-column pads: scientific labels clipped
+(`1/`, `sin⁻`) and key sizes varied wildly between modes. The `∛`
+keycap rendered as tofu (system font lacks U+221B), and the
+programmer base selector used Fill-height grid cells that swallowed
+the window's leftover vertical space as giant circles.
+Fix: every key is a `Standard` pill (`=` stays `Suggested`); named
+functions use the smaller `body` label so captions fit narrow keys,
+identically in every mode; `∛` relabeled `³√x` (glyphs present in
+the UI font); the window resizes per mode GNOME-style (standard
+400×580, scientific 640×600, programmer 560×660, boot sized from
+persisted mode) keeping key rows near identical; base selector and
+mode switcher share a Shrink-height `pill_button` helper. Tests:
+`mode_window_sizes_fit_each_pad` pins the per-mode sizes. Verified
+with live screenshots of all three modes plus a keyboard-driven
+standard→programmer switch showing the window grow.
+
 ## Non-bugs (investigated, legitimate)
 
 - `i18n.rs` `.expect()` on embedded fallback load: build-time asset
