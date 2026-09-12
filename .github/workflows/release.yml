@@ -1,0 +1,159 @@
+# Tag-only release publisher: the ONLY workflow that creates GitHub releases.
+# Flow: gate (version consistency) -> build matrix (native x86_64 + aarch64,
+# tarball + Flatpak per arch) -> publish (full-set verify, then release).
+# Any failure before publish stops the pipeline, so a release is atomic:
+# it either ships all four artifacts plus SHA256SUMS, or nothing.
+# Design: docs/release/CI-ARCHITECTURE.md. Runbook: docs/RELEASING.md.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*' # e.g. v0.1.0, v0.2.0-rc.1
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {} # default deny; each job declares what it needs
+
+jobs:
+  gate:
+    name: Version consistency gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - name: Check out tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check tag vs Cargo.toml vs metainfo
+        id: check
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'EOF'
+          import os, tomllib, json
+          import xml.etree.ElementTree as ET
+
+          ref = os.environ["TAG"]
+          assert ref.startswith("v"), f"tag must start with 'v': {ref}"
+          tag_version = ref[1:]
+          stem = tag_version.split("-", 1)[0]
+
+          cargo_version = tomllib.load(open("Cargo.toml", "rb"))["package"]["version"]
+          meta = ET.parse("resources/dev.goshapps.calc.metainfo.xml").getroot()
+          meta_version = meta.find("./releases/release").get("version")
+
+          if tag_version != cargo_version and stem != cargo_version:
+              raise SystemExit(
+                  f"tag v{tag_version} matches neither Cargo.toml ({cargo_version}) "
+                  f"nor its stem ({stem}); tag must be v<Cargo version>[-suffix]"
+              )
+          if meta_version != cargo_version:
+              raise SystemExit(
+                  f"metainfo ({meta_version}) != Cargo.toml ({cargo_version}); "
+                  f"keep them in sync (docs/RELEASING.md)"
+              )
+          json.load(open("flatpak/cargo-sources.json"))  # must exist and parse
+
+          prerelease = "true" if "-" in tag_version else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"version={tag_version}\nprerelease={prerelease}\n")
+          print(f"gate: tag v{tag_version}, cargo {cargo_version}, "
+                f"metainfo {meta_version}, prerelease={prerelease}")
+          EOF
+
+  build:
+    name: Build and package (${{ matrix.arch }})
+    needs: [gate]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable 2026-09-12
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          shared-key: release-${{ matrix.arch }}
+
+      - name: Install system and Flatpak dependencies
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y --no-install-recommends
+          pkg-config libwayland-dev libxkbcommon-dev flatpak flatpak-builder
+
+      - name: Install Freedesktop SDK
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub \
+            org.freedesktop.Platform//25.08 \
+            org.freedesktop.Sdk//25.08 \
+            org.freedesktop.Sdk.Extension.rust-stable//25.08
+
+      - name: Package release artifacts
+        # Builds, file(1)-checks, and checksums the tarball + Flatpak bundle.
+        run: scripts/package-release.sh --version '${{ needs.gate.outputs.version }}' --arch '${{ matrix.arch }}' --out dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: [gate, build] # waits for ALL arch legs; any failure skips publish
+    permissions:
+      contents: write # the only write permission in the pipeline
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tag (for scripts)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download all arch artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Assemble SHA256SUMS and verify full set
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          cd dist
+          sha256sum gosh-calc-*.tar.gz gosh-calc-*.flatpak | sort -k2 > SHA256SUMS
+          cd ..
+          scripts/verify-release.sh --version "$VERSION" --dir dist
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: gosh-calc ${{ needs.gate.outputs.version }}
+          prerelease: ${{ needs.gate.outputs.prerelease }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/gosh-calc-*.tar.gz
+            dist/gosh-calc-*.flatpak
+            dist/SHA256SUMS

@@ -53,6 +53,22 @@ You need `flatpak-builder` plus the Freedesktop 25.08 platform
 and SDK. The sandbox grants are minimal: Wayland, fallback X11,
 IPC, and DRI. No network, no filesystem, no notifications.
 
+## Releases
+
+Prebuilt x86_64 and aarch64 artifacts live on the
+[releases page](https://github.com/goshitsarch-eng/Gosh-Calc/releases):
+a portable tarball and a single-file Flatpak bundle per architecture,
+plus a `SHA256SUMS` checksum file.
+
+```sh
+sha256sum -c SHA256SUMS                    # verify downloads first
+tar xzf gosh-calc-0.1.0-x86_64.tar.gz      # portable: run ./gosh-calc-*/gosh-calc
+flatpak install --user gosh-calc-0.1.0-x86_64.flatpak  # or install the bundle
+```
+
+Pick the `-aarch64` files on ARM machines. Maintainers: cutting a
+release is tag-driven — see [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Use
 
 Pick a mode in the nav bar and type or click. Everything works
