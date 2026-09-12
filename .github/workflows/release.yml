@@ -94,13 +94,16 @@ jobs:
           shared-key: release-${{ matrix.arch }}
 
       # elfutils provides eu-strip, which flatpak-builder needs
-      # for its debug-strip finish phase.
+      # for its debug-strip finish phase. librsvg2-common provides the
+      # gdk-pixbuf SVG loader that appstreamcli compose needs to read
+      # the scalable icon (without it compose fails with
+      # file-read-error / filters-but-no-output).
       - name: Install system and Flatpak dependencies
         run: >
           sudo apt-get update &&
           sudo apt-get install -y --no-install-recommends
           pkg-config libwayland-dev libxkbcommon-dev flatpak flatpak-builder
-          elfutils
+          elfutils librsvg2-common
 
       - name: Install Freedesktop SDK
         run: |

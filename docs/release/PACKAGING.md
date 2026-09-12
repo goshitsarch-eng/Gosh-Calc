@@ -89,7 +89,10 @@ sha256sum -c SHA256SUMS
 
 Requirements: stable Rust, `file`, `sha256sum`, `tar`, `strip`, git,
 plus `flatpak`, `flatpak-builder`, `eu-strip` (from `elfutils` —
-flatpak-builder needs it for its debug-strip finish phase), and the
+flatpak-builder needs it for its debug-strip finish phase),
+an SVG loader for `appstreamcli compose` (`librsvg2-common` on
+Debian/Ubuntu — without it the compose step fails with
+`file-read-error` / `filters-but-no-output`), and the
 Freedesktop 25.08 platform/SDK with the rust-stable extension for the
 bundle:
 
