@@ -1,129 +1,105 @@
 # Gosh Calc
 
-A calculator for the COSMIC desktop, built with libcosmic. It has
-standard, scientific, and programmer modes, full keyboard support,
-and a history drawer that persists across launches.
+A desktop calculator with standard, scientific and programmer modes, rebuilt
+in Rust and Dioxus Desktop. It keeps Gosh Calc's keyboard workflow, pill keys,
+cyan accent and calculation history.
 
-## AI-assisted development
+**0.2.0-alpha.1 is a migration preview.** Linux native builds, X11/Wayland desktop
+interaction and 200% scaling have been tested. Windows, macOS, Flatpak and the new hosted CI
+workflows are undergoing runtime validation; see [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
+Do not treat this preview as a validated stable release on every platform.
 
-I use AI tools to speed up development, but I work
-architecture-first. I define the architecture, build and review the
-implementation, refactor it, and repeat the process as the project
-evolves.
+![Gosh Calc on Linux, light theme](docs/screenshots/linux-light.png)
+![Gosh Calc on Linux, dark theme](docs/screenshots/linux-dark.png)
 
-I treat AI as a junior developer: useful for implementation and
-exploration, but not the final authority. I remain responsible for
-the architecture, technical decisions, and quality of the code.
-
-I'm including this notice so you can make an informed choice about
-whether AI-assisted software is something you're comfortable using.
+Both images are captures of the running Linux application, not mockups.
 
 ## Features
 
-Three modes in the nav bar (persisted across launches):
+- Standard arithmetic with precedence, repeat equals, contextual percent,
+  reciprocal, square and square root.
+- Scientific powers, roots, factorial, logarithms, exponentials, trigonometry,
+  inverse trigonometry, DEG/RAD, π/e, EE and parentheses.
+- Exact signed 64-bit programmer arithmetic, HEX/DEC/OCT/BIN conversion,
+  bitwise operations and shifts. Invalid digits are disabled.
+- Up to 100 persistent history entries, recall and copy result.
+- Native menus, keyboard shortcuts, settings and About; System, Light and Dark
+  themes; persistent window size and maximized state.
+- Automatic import of the old Linux mode, angle and history with backups.
 
-- **Standard** — arithmetic with correct precedence, chained and
-  repeat-equals, context-aware percent, 1/x, x², √.
-- **Scientific** — parens (auto-close at `=`), powers and roots
-  (x² x³ xʸ y√x √ ∛), log/ln/eˣ/10ˣ, factorial, trig plus
-  inverses with a DEG/RAD toggle, π/e constants, EE entry for
-  scientific notation, Ans recall.
-- **Programmer** — HEX/DEC/OCT/BIN switching with A–F keys,
-  all four bases shown at once, AND/OR/XOR/NOT, shifts, modulo,
-  exact 64-bit integers.
+Unary functions act immediately on the current entry. Standard/scientific
+calculations use `f64` and display about 12 significant digits; this is not a
+symbolic or arbitrary-precision calculator. Programmer operations use `i64`.
+English is the shipped interface language, as in version 0.1. The Linux WebKit
+process tree currently uses more memory than the old app; measured performance
+is recorded in PLATFORM_SUPPORT.md.
 
-Every mode has an expression line plus a live result line. The
-header button opens a history drawer: newest first, click an
-entry to reuse its result, clear button at the bottom, persisted
-(cap 100). The copy button (or Ctrl+C) copies the result and
-shows a confirmation. Bad input shows `Error` and any digit
-starts fresh — the app doesn't crash on it.
+## Install a preview artifact
 
-## Install
+The tag workflow builds the following artifacts **after its platform checks
+pass**. These are packaging instructions, not a claim that a new release is
+already published.
+Download only artifacts that actually appear on the
+[Releases page](https://github.com/goshitsarch-eng/Gosh-Calc/releases) and verify
+`SHA256SUMS`. Version 0.1 artifacts use the previous Linux implementation.
 
-Build and install the Flatpak from this repo:
+**Windows x86_64:** install the `.msi`, or extract the portable `.zip`.
+Windows 10/11 and Microsoft's Evergreen WebView2 Runtime are required. Install
+that runtime from Microsoft if it is absent. The MSI installs per user, adds a
+Start Menu shortcut and preserves settings when uninstalled. A desktop shortcut
+can be selected with `msiexec /i <package>.msi ADDLOCAL=Main,Desktop`.
+
+**macOS:** extract the `.zip` and move `Gosh Calc.app` into Applications.
+Choose `aarch64` for Apple Silicon or `x86_64` for Intel. Local/CI bundles use an
+ad hoc signature; they are not Developer ID signed/notarized unless the release
+operator supplies credentials. See [BUILDING.md](BUILDING.md).
+
+**Linux Flatpak:** the preferred Linux package, once validated:
 
 ```sh
-flatpak-builder --user --install --force-clean build-dir \
-  flatpak/dev.goshapps.calc.yml
+flatpak install --user ./gosh-calc-<version>-flatpak-x86_64.flatpak
 flatpak run dev.goshapps.calc
 ```
 
-You need `flatpak-builder` plus the Freedesktop 25.08 platform
-and SDK. The sandbox grants are minimal: Wayland, fallback X11,
-IPC, and DRI. No network, no filesystem, no notifications.
+This is a local bundle, not a claim of publication in Flathub. It needs GNOME
+Platform 49 from Flathub. The app uses app-scoped configuration and no host
+filesystem or network permission.
 
-## Releases
-
-Prebuilt x86_64 and aarch64 artifacts live on the
-[releases page](https://github.com/goshitsarch-eng/Gosh-Calc/releases):
-a portable tarball and a single-file Flatpak bundle per architecture,
-plus a `SHA256SUMS` checksum file.
-
-```sh
-sha256sum -c SHA256SUMS                    # verify downloads first
-tar xzf gosh-calc-0.1.0-x86_64.tar.gz      # portable: run ./gosh-calc-*/gosh-calc
-flatpak install --user gosh-calc-0.1.0-x86_64.flatpak  # or install the bundle
-```
-
-Pick the `-aarch64` files on ARM machines. Maintainers: cutting a
-release is tag-driven — see [docs/RELEASING.md](docs/RELEASING.md).
-
-## Use
-
-Pick a mode in the nav bar and type or click. Everything works
-from the keyboard without clicking anything first. Mode, angle
-unit, and history persist; the HEX/DEC/OCT/BIN selection resets
-to DEC on relaunch.
-
-Settings live in your config dir via cosmic-config's file
-backend, so the app also runs on non-COSMIC desktops, and
-theming follows the settings portal when one is present.
-
-## Keyboard
-
-`0-9` digits (row + numpad) · `a-f` hex digits in programmer HEX ·
-`+ - * /` ops · `^` power (XOR in programmer) · `%` percent in
-standard/scientific, modulo in programmer · `()` parens ·
-`.`/`,` decimal · `!` factorial · `& | < > ~` bitwise ops ·
-`p` π in scientific · Enter/`=` evaluate · Backspace delete ·
-Delete clear entry · Esc clear all · Ctrl+C / Ctrl+Insert copy ·
-`h` or Ctrl+H history.
-
-## Limitations
-
-- No memory (M+/MR/MC) keys and no single-instance mode. Both
-  are deliberately deferred (see `docs/design/DECISIONS.md`, D8).
-- Unary functions (sin, √, …) apply to the entry immediately,
-  so history shows the computed operand rather than the symbolic
-  expression.
+**Linux archive:** extract `gosh-calc-<version>-linux-<arch>.tar.gz` and run
+`./gosh-calc`. It requires the system GTK3/WebKitGTK 4.1 libraries; the archive
+is not a statically linked, distribution-independent binary. The provided
+`.desktop`, AppStream and icon files support manual desktop integration.
 
 ## Development
 
-```sh
-cargo build
-cargo test
-cargo run
-```
-
-`scripts/verify.sh` runs the full gate: fmt, clippy, tests,
-desktop/metainfo validation, Flatpak build, and a headless
-smoke test. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
-checks, Flatpak rebuild notes, and troubleshooting.
-
-After changing `Cargo.lock`, regenerate the vendored Flatpak
-sources:
+Install stable Rust and your OS prerequisites from [BUILDING.md](BUILDING.md):
 
 ```sh
-python3 flatpak/flatpak-cargo-generator.py Cargo.lock -o flatpak/cargo-sources.json
+cargo build --locked
+cargo run --locked
+python3 scripts/verify.py
 ```
 
-## Contributing
+No Dioxus CLI, Node runtime, external service or application secret is required.
+Test the portable core without desktop libraries:
 
-Bug reports and pull requests are welcome — see
-[CONTRIBUTING.md](CONTRIBUTING.md) for how to set up and verify
-changes.
+```sh
+cargo test --locked --no-default-features
+```
 
-## License
+`Ctrl` is the primary shortcut modifier on Windows/Linux and `Command` on
+macOS. Use Enter/= to evaluate, Esc to clear, Delete for CE, Backspace to edit,
+primary+C to copy, Ctrl+H (Command+Shift+H on macOS) for history,
+primary+1/2/3 for modes, primary+comma
+for settings and F1 for shortcut help. Shifted operators work normally.
+In scientific mode `p` inserts π; in programmer HEX mode A–F enter digits.
 
-MIT — see [LICENSE](LICENSE).
+Settings live under the standard OS configuration directory in
+`dev.goshapps.calc/settings.json`. Legacy Linux RON files remain untouched.
+Malformed settings are backed up; unknown schema versions and oversized files
+are preserved with saving disabled. `GOSH_CALC_CONFIG_DIR` provides an optional
+isolated directory for testing. `--help` and `--version` do not open a window.
+
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md). Migration evidence and feature
+accounting: [MIGRATION_AUDIT.md](MIGRATION_AUDIT.md). Contribution and QA guidance:
+[CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).

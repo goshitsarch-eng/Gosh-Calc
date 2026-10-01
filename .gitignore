@@ -4,3 +4,8 @@
 /repo
 /dist
 Cargo.lock.bak
+
+__pycache__/
+/qa-dist/
+/flatpak/.qa-manifest.json
+*.wixpdb

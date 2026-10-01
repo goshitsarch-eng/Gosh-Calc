@@ -1,69 +1,14 @@
-// Copyright (c) 2026 goshitsarch-eng
-// SPDX-License-Identifier: MIT
-
-//! Integration tests: drive full user flows through `reduce()`
-//! messages and assert on `CalcState` — no pixels involved.
-//!
-//! The engine and message reducer live in the binary crate; these tests
-//! include them directly so the same code paths the UI drives are
-//! exercised end to end.
-
-#[allow(dead_code)]
-#[path = "../src/engine.rs"]
-mod engine;
-
-use engine::{Base, BinOp, CalcState, Mode, UnaryOp};
-
-/// Mirror of the app's reducer (kept in sync — the app delegates every
-/// engine message to these same `CalcState` methods).
-fn apply(state: &mut CalcState, msg: Msg) {
-    match msg {
-        Msg::Digit(d) => state.input_digit(d),
-        Msg::Dot => state.input_dot(),
-        Msg::Binary(op) => state.input_binary(op),
-        Msg::Unary(op) => state.input_unary(op),
-        Msg::Percent => state.input_percent(),
-        Msg::Equals => {
-            state.equals();
-        }
-        Msg::Backspace => state.backspace(),
-        Msg::ClearEntry => state.clear_entry(),
-        Msg::ClearAll => state.clear_all(),
-        Msg::ToggleSign => state.toggle_sign(),
-        Msg::SetBase(b) => state.set_base(b),
-        Msg::ToggleAngle => state.toggle_angle(),
-        Msg::LParen => state.input_lparen(),
-        Msg::RParen => state.input_rparen(),
-        Msg::Recall(i) => state.recall_history(i),
-        Msg::ClearHistory => state.clear_history(),
-        Msg::SetMode(m) => state.set_mode(m),
-        Msg::Ans => state.input_ans(),
-        Msg::Exp => state.input_exp(),
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-enum Msg {
-    Digit(u8),
-    Dot,
-    Binary(BinOp),
-    Unary(UnaryOp),
-    Percent,
-    Equals,
-    Backspace,
-    ClearEntry,
-    ClearAll,
-    ToggleSign,
-    SetBase(Base),
-    ToggleAngle,
-    LParen,
-    RParen,
-    Recall(usize),
-    ClearHistory,
-    SetMode(Mode),
-    Ans,
-    Exp,
+//! Original calculation workflows now exercise the real shared dispatcher.
+use gosh_calc::commands::Command as Msg;
+use gosh_calc::engine::{Base, BinOp, CalcState, Mode, UnaryOp};
+use gosh_calc::state::AppState;
+fn apply(state: &mut CalcState, command: Msg) {
+    let mut app = AppState {
+        calc: std::mem::take(state),
+        ..AppState::default()
+    };
+    app.dispatch(command);
+    *state = app.calc;
 }
 
 fn run(state: &mut CalcState, msgs: &[Msg]) {

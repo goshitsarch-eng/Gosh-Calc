@@ -1,102 +1,40 @@
-# Contributing to Gosh Calc
+# Contributing
 
-## Setup
-
-You need a Rust toolchain (stable) and the system libraries for a
-libcosmic app. Then:
+Read BUILDING.md for your OS, ARCHITECTURE.md for boundaries, and
+MIGRATION_AUDIT.md for the old behavior and migration decisions.
 
 ```sh
-git clone https://github.com/goshitsarch-eng/Gosh-Calc.git
-cd Gosh-Calc
-cargo build
-cargo run
+python3 scripts/verify.py
+cargo build --locked --features ui-test
+python3 scripts/smoke.py target/debug/gosh-calc  # .exe on Windows
 ```
 
-The first build compiles the whole dependency tree (hundreds of
-crates including wgpu), so it takes a while. Later builds are
-incremental. No COSMIC session is required to run it.
+The desktop suite launches the real native WebView, requires completed checks,
+and rejects missing/stale outcome files or nonzero exit. It is not included in
+production builds. Without system GUI libraries use `scripts/verify.py --core`;
+report that as core validation only. Flatpak QA is a separate build/install/run
+from BUILDING.md and is never silently skipped by the native verification script.
 
-## Checks
+Keep domain math in engine, availability/actions in commands, durable settings
+in persistence/state, and native behavior in platform. All UI entry points use
+the shared command dispatcher. Use Path/PathBuf, bounded parsing, checked math,
+visible errors and backups. Preserve useful behavior and update the audit and
+platform matrix when evidence changes. Do not duplicate the reducer in tests.
 
-Run the suite and lints:
+No mutable settings belong beside the executable. Do not log calculation
+history. Avoid app unsafe code and shell commands. Review new dependencies for
+license, maintenance and platform support; see SECURITY.md and vendor/README.md
+for the current host-stack backport and dependency limitations.
 
-```sh
-cargo test            # 34 unit + 37 integration tests
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-```
+Manual QA before a stable release: exercise every visible control and native
+menu, real shortcuts/clipboard, error recovery, all bases, history recall/clear,
+settings persistence after close/reopen, corrupted configuration, minimum and
+maximized windows, high DPI, keyboard focus and screen readers, all theme modes,
+Windows install/upgrade/uninstall, both macOS architectures and the installed
+Flatpak. Record evidence rather than inferring support from compile results.
 
-For the full gate — fmt, clippy, tests, desktop/metainfo
-validation, Flatpak build, headless smoke test — run:
-
-```sh
-scripts/verify.sh
-```
-
-Run this before opening a pull request. It skips the Flatpak
-stages with a warning if `flatpak-builder` isn't installed.
-
-## Code layout
-
-- `src/engine.rs` — the calculator itself: tokens, evaluation,
-  formatting, history. Pure Rust, no libcosmic imports. Keep it
-  that way so tests can drive it without a GUI.
-- `src/main.rs` — the libcosmic shell: `Message`, key mapping,
-  view, keypads, history drawer. Engine-bound messages go
-  through `reduce()`; clipboard/drawer/keyboard plumbing stays
-  in `update()`.
-- `src/config.rs` — persistence. Persisted state is exactly
-  mode, angle unit, and history, saved only when one of those
-  changes (`needs_save` in `main.rs`). Don't add per-keystroke
-  writes.
-- `src/i18n.rs` + `i18n/en/gosh_calc.ftl` — Fluent strings.
-  User-visible chrome goes through `fl!()`; keypad symbols
-  stay literal.
-- `tests/integration.rs` — end-to-end flows through the same
-  engine calls the UI drives.
-
-Design context lives in `docs/design/` (decisions, UX spec,
-architecture, packaging). `docs/audit/` is the record of a past
-hardening pass — history, not a task list.
-
-## Flatpak
-
-The manifest is `flatpak/dev.goshapps.calc.yml` (Freedesktop
-25.08, rust-stable SDK extension, offline vendored build).
-Rebuild and run it with:
-
-```sh
-flatpak-builder --user --install --force-clean build-dir \
-  flatpak/dev.goshapps.calc.yml
-flatpak run dev.goshapps.calc
-```
-
-After any `Cargo.lock` change, regenerate the vendored sources
-or the offline build breaks:
-
-```sh
-python3 flatpak/flatpak-cargo-generator.py Cargo.lock -o flatpak/cargo-sources.json
-```
-
-Finish-args stay minimal (Wayland, fallback X11, IPC, DRI).
-Don't add permissions the app doesn't need.
-
-## Troubleshooting
-
-**Flatpak build fails with `failed to access mountpoint`.**
-A stale `rofiles-fuse` mount plus FUSE restrictions on the host.
-`verify.sh` already passes `--disable-rofiles-fuse` for this;
-use the same flag on manual builds.
-
-**Offline Flatpak build complains about missing sources.**
-`flatpak/cargo-sources.json` is stale. Regenerate it with the
-command above and rebuild.
-
-**`scripts/smoke.sh` exits with `no display server available`.**
-It needs a Wayland session, `weston`, or an X11 `DISPLAY` to
-launch the app under. Install weston or run it from a desktop
-session.
-
-**First `cargo build` seems stuck.**
-It's compiling ~600 crates. Give it time; check with
-`cargo build -v` if you want proof of progress.
+Version 0.2.0-alpha.N is the rewrite preview series. Native CI covers Linux x86_64/
+arm64, Windows MSVC and both Mac architectures; Flatpak has two native runners.
+A version tag invokes the same gates and packages before publication. See
+[docs/RELEASING.md](docs/RELEASING.md). Historical 0.1 design notes remain in git
+history; current root documents describe the canonical Dioxus application.
