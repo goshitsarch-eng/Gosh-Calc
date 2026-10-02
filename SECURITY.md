@@ -21,6 +21,8 @@ RUSTSEC-2026-0097 concerning a custom logger that recursively uses RNG. This
 application neither implements that logger nor uses that rand version for
 application randomness. These are upstream dependency liabilities to revisit
 with future Dioxus/WebView releases, not silently suppressed audit results.
+The macOS host also includes `block` 0.1.6, which emits a Rust future-
+incompatibility warning; both macOS compilation checks currently pass.
 
 Dioxus 0.7.10 references Wry inspector methods even with its development tools
 feature disabled. A narrow direct Wry feature enables compilation; production

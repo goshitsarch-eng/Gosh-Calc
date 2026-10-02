@@ -19,7 +19,7 @@ jobs:
       - name: Install builder and GNOME WebKit runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder elfutils librsvg2-common xvfb dbus-x11
+          sudo apt-get install -y flatpak flatpak-builder elfutils debugedit appstream-compose librsvg2-common xvfb dbus-x11
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y flathub org.gnome.Platform//49 org.gnome.Sdk//49 org.freedesktop.Sdk.Extension.rust-stable//25.08
       - name: Build and install QA bundle
@@ -34,7 +34,7 @@ jobs:
         run: |
           flatpak install --user -y --reinstall dist/*.flatpak
           flatpak info --user --show-permissions dev.goshapps.calc
-          flatpak run dev.goshapps.calc --version
+          flatpak run --user dev.goshapps.calc --version
           python scripts/verify_release.py --dir dist --version $(python -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['package']['version'])")
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

@@ -2,7 +2,9 @@
 
 Only release.yml publishes GitHub Releases. Branch/PR CI has read permissions.
 Do not tag a migration preview as stable before PLATFORM_SUPPORT.md is verified.
-The current hosted workflows have not been run from this restricted cloud task.
+Hosted CI was triggered, but GitHub refused to start the jobs because the
+account is locked due to a billing issue. Resolve that account blocker before
+expecting platform artifacts or tagging a release; see PLATFORM_SUPPORT.md.
 
 1. Update Cargo.toml and the newest AppStream release to exactly the same version,
    including the prerelease suffix. Update CHANGELOG.md and platform evidence.

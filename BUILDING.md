@@ -5,8 +5,9 @@ Commands run from the checkout root. Dioxus 0.7.10 is used as a Cargo library;
 the Dioxus CLI is optional and is not needed for these builds.
 
 Linux instructions below were exercised on Debian 13 with Rust 1.99.0.
-Windows/macOS/Flatpak instructions and CI jobs are prepared but unexecuted in
-this cloud environment. Their actual status is in PLATFORM_SUPPORT.md.
+Native Linux and the x86_64 Flatpak build/install/UI steps were exercised.
+Windows/macOS desktop targets pass compilation checks, but native linking,
+launch and installer checks require their OS. See PLATFORM_SUPPORT.md.
 
 ## Portable core
 
@@ -127,7 +128,7 @@ executables, but would need both builds and a fresh signature/runtime QA.
 
 ## Flatpak
 
-Install `flatpak flatpak-builder elfutils librsvg2-common` and enable user
+Install `flatpak flatpak-builder elfutils debugedit appstream-compose librsvg2-common` and enable user
 namespaces. This manifest targets GNOME 49 for GTK3/WebKitGTK 4.1:
 
 ```sh
@@ -138,14 +139,14 @@ flatpak install --user -y flathub org.gnome.Platform//49 org.gnome.Sdk//49 \
 python3 flatpak/flatpak-cargo-generator.py Cargo.lock -o flatpak/cargo-sources.json
 python3 scripts/flatpak.py --out dist
 flatpak install --user -y dist/*.flatpak
-flatpak run dev.goshapps.calc
+flatpak run --user dev.goshapps.calc
 ```
 
 Source downloads are checked against Cargo.lock hashes. The build is offline
 and includes the documented GLib safety backport under vendor/. Regenerate the
-source list whenever Cargo.lock changes. The SDK itself and in-sandbox WebKit
-availability have not been verified here because dl.flathub.org is blocked.
-Manifest parsing and source-list consistency checks passed.
+source list whenever Cargo.lock changes. GNOME SDK/Platform 49 with the Rust
+25.08 extension built this application offline on x86_64. The installed sandbox
+passed all 70 desktop checks; aarch64 still needs its native runner.
 
 Test the actual sandbox with a separate QA bundle, never a published binary:
 

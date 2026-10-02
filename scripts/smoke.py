@@ -24,10 +24,15 @@ with tempfile.TemporaryDirectory(prefix="gosh-calc-Δ-") as temporary:
     if args.flatpak:
         # A narrow scratch-directory grant is only used by QA. The production
         # manifest has no filesystem grant and uses its app-scoped XDG storage.
-        command = ["flatpak", "run", f"--filesystem={root}", "--env=GOSH_CALC_UI_TEST=1", f"--env=GOSH_CALC_UI_TEST_RESULT={result_path}", f"--env=GOSH_CALC_CONFIG_DIR={root / 'config'}", "dev.goshapps.calc"]
+        command = ["flatpak", "run", "--user", f"--filesystem={root}", "--env=GOSH_CALC_UI_TEST=1", f"--env=GOSH_CALC_UI_TEST_RESULT={result_path}", f"--env=GOSH_CALC_CONFIG_DIR={root / 'config'}", "dev.goshapps.calc"]
     else:
         command = [str(binary)]
-    run = subprocess.run(command, env=environment, text=True, capture_output=True, timeout=120)
+    try:
+        run = subprocess.run(command, env=environment, text=True, capture_output=True, timeout=120)
+    except subprocess.TimeoutExpired as error:
+        for output in [error.stdout, error.stderr]:
+            if output: print(output.decode(errors="replace") if isinstance(output, bytes) else output)
+        raise SystemExit("Desktop suite timed out before reporting a completed outcome") from error
     print(run.stdout, end="")
     if run.returncode != 0 or not result_path.is_file() or result_path.read_text() != "0":
         print(run.stderr)

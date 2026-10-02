@@ -8,11 +8,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 button:hover:not(:disabled) { filter: brightness(1.08); }
 button:active:not(:disabled) { transform: translateY(1px); }
 .app {
-  --bg: #f4f5f6; --panel: #fff; --key: #e7e9ec; --text: #182027; --muted: #56636e; --line: #dce1e5; --accent: #087f8d; --accent-text: #fff;
+  --bg: #f4f5f6; --panel: #fff; --key: #e7e9ec; --text: #182027; --muted: #56636e; --line: #dce1e5; --accent: #087f8d; --accent-text: #fff; --error: #b7253b;
   height: 100%; min-width: 320px; padding: 18px; background: var(--bg); color: var(--text); display: flex; flex-direction: column; gap: 16px; outline: none; overflow: hidden;
 }
-.app[data-theme="dark"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; }
-@media (prefers-color-scheme: dark) { .app[data-theme="system"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; } }
+.app[data-theme="dark"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; --error: #ff8997; }
+@media (prefers-color-scheme: dark) { .app[data-theme="system"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; --error: #ff8997; } }
 .app[data-theme="light"] { color-scheme: light; }
 .app[data-theme="dark"] { color-scheme: dark; }
 .toolbar, .brand, .toolbar-actions, .panel-heading, .expression-row { display: flex; align-items: center; gap: 10px; }
@@ -29,7 +29,7 @@ button[aria-pressed="true"] { background: var(--accent) !important; color: var(-
 .expression-row { min-height: 32px; }
 .expression { flex: 1; min-width: 0; white-space: nowrap; overflow: auto; color: var(--muted); font-size: 13px; }
 .result { display: block; font-size: clamp(26px, 7vw, 42px); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.8px; overflow-x: auto; white-space: nowrap; margin: 5px 0 12px; }
-.error-detail { margin: 0 0 10px; color: #d04b5b; }
+.error-detail { margin: 0 0 10px; color: var(--error); }
 .angle { font-size: 12px !important; color: var(--muted); }
 .base-readout { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
 .base-readout button { background: var(--key); text-align: left; padding: 8px 10px; min-width: 0; }

@@ -77,7 +77,7 @@ columns in PLATFORM_SUPPORT.md record new-runtime verification separately.
 | Memory M+/MR/MC and single instance | NOT IMPLEMENTED | Explicitly deferred in original; no parity requirement | Not applicable |
 | File operations, drag/drop, printing, notifications | NOT IMPLEMENTED | Calculator has no file-oriented workflow; do not add decorative controls | Not applicable |
 | Windows/macOS installers and native releases | NOT IMPLEMENTED | Required migration packaging and native CI | PREPARED: native CI pending runtime evidence |
-| Flatpak | UNKNOWN runtime evidence, manifest exists | Preserve app ID and minimal permissions; WebKit needs suitable runtime | IN PROGRESS: SDK install and actual sandbox QA |
+| Flatpak | UNKNOWN runtime evidence, manifest exists | Preserve app ID and minimal permissions; WebKit needs suitable runtime | VERIFIED x86_64: offline SDK build, installed sandbox 70 checks; arm64 pending |
 
 ## Defects and decisions
 
@@ -107,8 +107,10 @@ For each inventory row, update migration status after implementation and tests.
 The four platform runtime statuses are tracked independently in PLATFORM_SUPPORT.md.
 Windows/macOS/Flatpak must not be marked VERIFIED by a Linux compile or YAML check.
 The initial network policy blocked the GitHub API and Flathub. Access became
-available after the environment was refreshed; hosted CI and actual Flatpak QA
-are now being executed. Record their outcomes separately from native Linux QA.
+available after the environment was refreshed. Installed x86_64 Flatpak QA
+passes 70 checks. Hosted CI was triggered, but every job was refused before
+execution because the GitHub account has a billing lock. Windows/macOS desktop
+compilation checks pass; this does not validate their installers or native UX.
 
 ## Feature checklist and code removal
 
@@ -117,8 +119,8 @@ reimplemented and covered by core tests and/or real desktop callback checks.
 The 70-check Linux desktop suite verifies all scientific function results,
 programmer operations, digit callbacks, histories, themes and dialogs. Physical
 X11 input and native menus supplement synthetic DOM input. Linux X11, nested
-Wayland and 200% scaling passed; Windows/macOS/Flatpak columns remain evidence
-gates in PLATFORM_SUPPORT.md. Settings, malformed data, CRLF, Unicode paths,
+Wayland, 200% scaling and installed x86_64 Flatpak checks passed; Windows/macOS
+native runtime and aarch64 Flatpak remain evidence gates in PLATFORM_SUPPORT.md. Settings, malformed data, CRLF, Unicode paths,
 backups, unknown schemas and shutdown flushing have regression coverage.
 
 Once Linux parity was exercised, the obsolete COSMIC shell, cosmic-config

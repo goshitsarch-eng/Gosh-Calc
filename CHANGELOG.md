@@ -13,8 +13,10 @@
   protect malformed, oversized or future-version configuration.
 - Add real desktop automation and Windows/macOS/Linux/Flatpak packaging/CI.
 - Backport an upstream GLib iterator safety fix required by the Linux WebKit host.
-- Linux native QA passes. Other platforms, Flatpak and hosted workflows remain
-  unvalidated here; see PLATFORM_SUPPORT.md. This is not a stable release.
+- Linux native and installed x86_64 Flatpak QA pass. Windows/macOS desktop
+  compilation checks pass; their runtime/installer QA and aarch64 Flatpak remain
+  pending. Hosted jobs are blocked by a GitHub billing lock. See
+  PLATFORM_SUPPORT.md; this remains a preview.
 
 ## 0.1.0 — 2026-09-11
 

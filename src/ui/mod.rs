@@ -34,7 +34,9 @@ pub fn App() -> Element {
         let mut model = model;
         #[cfg(feature = "ui-test")]
         {
-            *test_revision.write() += 1;
+            if !matches!(command, Command::SetWindow(_)) {
+                *test_revision.write() += 1;
+            }
         }
         if controller.execute(&mut model.write(), command) {
             dioxus_desktop::window().close();

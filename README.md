@@ -5,8 +5,10 @@ in Rust and Dioxus Desktop. It keeps Gosh Calc's keyboard workflow, pill keys,
 cyan accent and calculation history.
 
 **0.2.0-alpha.1 is a migration preview.** Linux native builds, X11/Wayland desktop
-interaction and 200% scaling have been tested. Windows, macOS, Flatpak and the new hosted CI
-workflows are undergoing runtime validation; see [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
+interaction, 200% scaling and the installed x86_64 Flatpak have been tested.
+Windows/macOS desktop compilation checks pass; native runtime/installer checks
+remain pending. Hosted CI is blocked by a GitHub billing lock; see
+[PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
 Do not treat this preview as a validated stable release on every platform.
 
 ![Gosh Calc on Linux, light theme](docs/screenshots/linux-light.png)
@@ -54,11 +56,11 @@ Choose `aarch64` for Apple Silicon or `x86_64` for Intel. Local/CI bundles use a
 ad hoc signature; they are not Developer ID signed/notarized unless the release
 operator supplies credentials. See [BUILDING.md](BUILDING.md).
 
-**Linux Flatpak:** the preferred Linux package, once validated:
+**Linux Flatpak:** the preferred Linux package:
 
 ```sh
 flatpak install --user ./gosh-calc-<version>-flatpak-x86_64.flatpak
-flatpak run dev.goshapps.calc
+flatpak run --user dev.goshapps.calc
 ```
 
 This is a local bundle, not a claim of publication in Flathub. It needs GNOME

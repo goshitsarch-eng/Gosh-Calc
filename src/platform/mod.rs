@@ -11,7 +11,7 @@ use dioxus_desktop::{
 use gosh_calc::{
     commands::Command,
     persistence::{Store, Writer},
-    state::{AppState, Dialog},
+    state::{AppState, Dialog, Theme},
     APP_NAME,
 };
 use std::rc::Rc;
@@ -36,6 +36,9 @@ impl Controller {
     pub fn execute(&self, state: &mut AppState, command: Command) -> bool {
         let previous_mode = state.calc.mode;
         let effect = state.dispatch(command);
+        if matches!(command, Command::SetTheme(_)) {
+            dioxus_desktop::window().set_theme(native_theme(state.theme));
+        }
         if state.calc.mode == gosh_calc::engine::Mode::Scientific
             && previous_mode != state.calc.mode
         {
@@ -74,6 +77,15 @@ pub fn primary_modifier(control: bool, meta: bool) -> bool {
     }
 }
 
+fn native_theme(theme: Theme) -> Option<dioxus_desktop::tao::window::Theme> {
+    use dioxus_desktop::tao::window::Theme as NativeTheme;
+    match theme {
+        Theme::System => None,
+        Theme::Light => Some(NativeTheme::Light),
+        Theme::Dark => Some(NativeTheme::Dark),
+    }
+}
+
 pub fn keyboard(
     key: &str,
     control: bool,
@@ -104,8 +116,11 @@ pub fn configure_webview() {
     {
         use dioxus_desktop::wry::WebViewExtUnix;
         use glib::prelude::*;
+        use webkit2gtk::WebViewExt;
         let view = dioxus_desktop::window().webview.webview();
-        let settings = view.property::<glib::Object>("settings");
+        let Some(settings) = view.settings() else {
+            return;
+        };
         // A calculator needs no media, WebGL or back/forward page cache. Use
         // properties provided by the running system WebKit, preserving its
         // normal sandbox and JavaScript engine.
@@ -213,7 +228,7 @@ fn menus() -> Result<Menu, Box<dyn std::error::Error>> {
         true,
         None,
     ))?;
-    menu.append_items(&[&app, &edit, &view, &help])?;
+    menu.append_items(&[&app, &edit, &view])?;
     #[cfg(target_os = "macos")]
     {
         let window = Submenu::new("Window", true);
@@ -223,6 +238,7 @@ fn menus() -> Result<Menu, Box<dyn std::error::Error>> {
         ])?;
         menu.append(&window)?;
     }
+    menu.append(&help)?;
     Ok(menu)
 }
 
@@ -238,6 +254,7 @@ pub fn desktop_config(
     };
     let builder = WindowBuilder::new()
         .with_title(APP_NAME)
+        .with_theme(native_theme(state.theme))
         .with_inner_size(LogicalSize::new(width, geometry.height))
         .with_min_inner_size(LogicalSize::new(360.0, 480.0))
         .with_maximized(geometry.maximized)

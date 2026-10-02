@@ -8,7 +8,7 @@ repository = "https://github.com/goshitsarch-eng/Gosh-Calc"
 
 [features]
 default = ["desktop"]
-desktop = ["dep:dioxus", "dep:dioxus-desktop", "dep:arboard", "dep:tokio", "dep:glib", "dep:gtk", "dep:wry"]
+desktop = ["dep:dioxus", "dep:dioxus-desktop", "dep:arboard", "dep:tokio", "dep:glib", "dep:gtk", "dep:webkit2gtk", "dep:wry"]
 ui-test = ["desktop"]
 
 [[bin]]
@@ -43,6 +43,7 @@ glib = { version = "0.18.5", optional = true }
 # Use the already-required WebKit host's native clipboard on both Wayland and
 # X11, including compositors without the optional data-control protocol.
 gtk = { version = "0.18", optional = true }
+webkit2gtk = { version = "2", optional = true }
 
 [patch.crates-io]
 glib = { path = "vendor/glib" }
