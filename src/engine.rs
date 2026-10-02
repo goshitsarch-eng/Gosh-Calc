@@ -1,7 +1,7 @@
 // Copyright (c) 2026 goshitsarch-eng
 // SPDX-License-Identifier: MIT
 
-//! Calculator engine: pure Rust, no libcosmic imports.
+//! Portable calculator engine; independent of the UI and operating system.
 //!
 //! Immediate-execution model: the user builds a token list
 //! (`expr`) plus a raw `entry` string for the operand being typed.
@@ -10,6 +10,7 @@
 use std::fmt;
 
 const MAX_ENTRY_LEN: usize = 32;
+const MAX_TOKENS: usize = 256;
 pub const MAX_HISTORY: usize = 100;
 /// Bound for any single persisted string (history expr/result) accepted
 /// from the config file. Engine-formatted values are far shorter; this
@@ -211,7 +212,7 @@ impl fmt::Display for CalcError {
 }
 
 /// Numeric value: exact i64 in programmer mode, f64 elsewhere.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Value {
     F(f64),
     I(i64),
@@ -250,6 +251,9 @@ enum Token {
 pub struct HistoryEntry {
     pub expr: String,
     pub result: String,
+    /// Numeric metadata fixes recall across bases; absent in legacy RON records.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<Value>,
 }
 
 #[derive(Clone, Debug)]
@@ -483,12 +487,7 @@ impl CalcState {
         if self.error.is_some() {
             return;
         }
-        if let Some(h) = self.history.first() {
-            self.entry = h.result.clone();
-            truncate_str(&mut self.entry, MAX_ENTRY_LEN);
-            self.fresh = true;
-            self.evaluated = false;
-        }
+        self.recall_history(0);
     }
 
     pub fn input_const(&mut self, c: Const) {
@@ -506,6 +505,10 @@ impl CalcState {
 
     pub fn input_binary(&mut self, op: BinOp) {
         if self.error.is_some() || !op.allowed_in(self.mode) {
+            return;
+        }
+        if self.expr.len() >= MAX_TOKENS - 2 {
+            self.error = Some(CalcError::OutOfRange);
             return;
         }
         // "-" while typing a negative operand: wait for digits
@@ -558,6 +561,10 @@ impl CalcState {
 
     pub fn input_lparen(&mut self) {
         if self.error.is_some() || self.mode == Mode::Standard {
+            return;
+        }
+        if self.expr.len() >= MAX_TOKENS / 2 {
+            self.error = Some(CalcError::OutOfRange);
             return;
         }
         // "(" mid-entry would need implicit multiplication — not supported
@@ -732,6 +739,7 @@ impl CalcState {
             HistoryEntry {
                 expr: rec.0.clone(),
                 result: rec.1.clone(),
+                value: Some(result),
             },
         );
         self.history.truncate(MAX_HISTORY);
@@ -742,7 +750,11 @@ impl CalcState {
         let Some(h) = self.history.get(idx) else {
             return;
         };
-        self.entry = h.result.clone();
+        self.entry = match h.value {
+            Some(v) if self.mode == Mode::Programmer => self.fmt_value(Value::I(v.as_i64())),
+            Some(v) => self.fmt_value(Value::F(v.as_f64())),
+            None => h.result.clone(),
+        };
         truncate_str(&mut self.entry, MAX_ENTRY_LEN);
         self.error = None;
         self.fresh = true;
@@ -1680,6 +1692,7 @@ mod tests {
             s.history.push(HistoryEntry {
                 expr: "e".repeat(1000),
                 result: format!("{i}").repeat(100),
+                value: None,
             });
         }
         s.sanitize_persisted();
@@ -1711,6 +1724,7 @@ mod tests {
         s.history.push(HistoryEntry {
             expr: "x".into(),
             result: "9".repeat(500),
+            value: None,
         });
         s.recall_history(0);
         assert!(s.entry().len() <= 32);

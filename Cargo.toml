@@ -1,30 +1,55 @@
 [package]
 name = "gosh-calc"
-version = "0.1.0"
+version = "0.2.0-alpha.1"
 edition = "2021"
 license = "MIT"
-description = "A calculator for the COSMIC desktop"
+description = "A cross-platform standard, scientific, and programmer calculator"
 repository = "https://github.com/goshitsarch-eng/Gosh-Calc"
 
+[features]
+default = ["desktop"]
+desktop = ["dep:dioxus", "dep:dioxus-desktop", "dep:arboard", "dep:tokio", "dep:glib", "dep:gtk", "dep:webkit2gtk", "dep:wry"]
+ui-test = ["desktop"]
+
+[[bin]]
+name = "gosh-calc"
+path = "src/main.rs"
+required-features = ["desktop"]
+
 [dependencies]
-libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "b728852754db54201002b84d9279a207f00de8f2", default-features = false, features = [
-    "winit",
-    "tokio",
-    "a11y",
-    "x11",
-    "wayland",
-    "wgpu",
-    "xdg-portal",
-] }
+dioxus = { version = "=0.7.10", optional = true, default-features = false, features = ["macro", "html", "signals", "hooks", "document"] }
+dioxus-desktop = { version = "=0.7.10", optional = true, default-features = false, features = ["tokio_runtime"] }
+# Dioxus 0.7.10 calls Wry inspector methods unconditionally in release builds.
+# Enable those methods without enabling the Dioxus development server; the
+# production WebView keeps inspector access disabled.
+wry = { version = "=0.53.5", optional = true, default-features = false, features = ["devtools"] }
+tokio = { version = "1", optional = true, features = ["time"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ron = "0.12"
+directories = "6"
 env_logger = "0.11"
 log = "0.4"
-i18n-embed = { version = "0.16", features = [
-    "fluent-system",
-    "desktop-requester",
-] }
-i18n-embed-fl = "0.10"
-rust-embed = "8"
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+arboard = { version = "3.6", optional = true, default-features = false }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Regression coverage for the security backport in the existing WebKit host stack.
+glib = { version = "0.18.5", optional = true }
+# Use the already-required WebKit host's native clipboard on both Wayland and
+# X11, including compositors without the optional data-control protocol.
+gtk = { version = "0.18", optional = true }
+webkit2gtk = { version = "2", optional = true }
+
+[patch.crates-io]
+glib = { path = "vendor/glib" }
+
+[dev-dependencies]
+tempfile = "3"
 
 [profile.release]
 lto = "thin"

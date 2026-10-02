@@ -1,39 +1,44 @@
-# Releasing Gosh Calc
+# Release procedure
 
-Short maintainer runbook. Background: [CI architecture](release/CI-ARCHITECTURE.md),
-[packaging](release/PACKAGING.md), [release policy](release/RELEASES.md).
+Only release.yml publishes GitHub Releases. Branch/PR CI has read permissions.
+Do not tag a migration preview as stable before PLATFORM_SUPPORT.md is verified.
+Hosted CI was triggered, but GitHub refused to start the jobs because the
+account is locked due to a billing issue. Resolve that account blocker before
+expecting platform artifacts or tagging a release; see PLATFORM_SUPPORT.md.
 
-## Cut a release
+1. Update Cargo.toml and the newest AppStream release to exactly the same version,
+   including the prerelease suffix. Update CHANGELOG.md and platform evidence.
+2. Resolve dependency advisories or document a narrow, reviewed backport.
+3. Regenerate offline sources from Cargo.lock and run the native tests/UI suite.
+4. Run CI on all native runners and both Flatpak architectures. Inspect its
+   logs, downloaded archives, MSI installation, Mac signatures and sandbox QA.
+5. After manual platform QA, create/push `v<exact Cargo version>`. The tag gate
+   rejects inconsistent versions or a stale Flatpak source list. This guide
+   describes publication; local packaging does not itself create a release.
 
-1. Bump the version in one commit:
-   - `Cargo.toml` `package.version`
-   - `resources/dev.goshapps.calc.metainfo.xml` — new `<release version="..." date="...">` entry
-   - If dependencies changed: `cargo build` (updates `Cargo.lock`), then regenerate
-     `python3 flatpak/flatpak-cargo-generator.py Cargo.lock -o flatpak/cargo-sources.json`
-2. Run the full local gate: `scripts/verify.sh`
-3. Optionally dry-run packaging for your arch:
-   `scripts/package-release.sh --version X.Y.Z --arch "$(uname -m)" --out /tmp/gosh-dist`
-   (packaging requires a clean tree)
-4. Commit, then tag and push:
-   ```sh
-   git tag -a vX.Y.Z -m "gosh-calc vX.Y.Z"
-   git push origin main vX.Y.Z
-   ```
-5. Watch the `Release` workflow on the tag. `gate` -> both `build`
-   legs -> `publish`, which creates the GitHub release with the four
-   artifacts plus `SHA256SUMS`.
-6. Sanity-check the published release: download `SHA256SUMS` plus one
-   tarball and run `sha256sum -c SHA256SUMS`.
+Release reuses the native and Flatpak validation workflows. All jobs must pass.
+The publisher merges artifacts, regenerates SHA256SUMS and calls the verifier
+with `--full`, requiring exactly:
 
-Pre-releases: tag `vX.Y.Z-rc.1` (or `-beta`, ...). The pipeline marks
-the GitHub release as a pre-release automatically; artifact names carry
-the full `X.Y.Z-rc.1` version.
+- Windows x86_64 MSI and portable zip;
+- macOS Apple Silicon and Intel .app zips;
+- Linux x86_64 and aarch64 native archives;
+- Flatpak x86_64 and aarch64 bundles.
 
-## Rules
+The verifier checks hashes, coverage, naming/version, archive safety, executable
+architectures and Mac bundle metadata. Windows CI tests a synthetic older MSI,
+major upgrade, shortcuts and uninstall. Flatpak CI builds/installs a test-hook
+bundle, exercises it inside the sandbox, then builds a production bundle without
+those hooks and verifies installation/CLI. Mac CI inspects the code signature.
+Manual launch and platform UX remain necessary beyond these automated checks.
 
-- Tags are `v<Cargo version>[-suffix]`, and the tag stem must equal
-  `Cargo.toml` (enforced by the gate). Never publish from a branch
-  push — `release.yml` is tag-only, and `ci.yml` never publishes.
-- A failed run before `publish` publishes nothing: fix forward and
-  re-run the workflow. Never force-move a tag with a published
-  release; cut a new version instead.
+Mac bundles are ad hoc signed unless the operator configures existing Keychain
+Developer ID/notary credentials. The scripts support hardened-runtime signing,
+notarytool submission, stapling and repackaging. Signing secrets are not required
+for local development and are never placed in the repository. The default hosted
+workflow does not provision signing credentials or claim notarization.
+
+MSI versions are numeric; see scripts/package.py for the monotonic prerelease
+mapping. Public names and Cargo/AppStream preserve the full SemVer prerelease.
+Never overwrite a stable release with an untested preview. Failed matrix jobs
+block publication; rerun/fix them before tagging a new version.

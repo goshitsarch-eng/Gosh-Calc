@@ -1,0 +1,73 @@
+:root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; color-scheme: light dark; }
+* { box-sizing: border-box; }
+html, body, #main { height: 100%; margin: 0; }
+body { overflow: hidden; }
+button { font: inherit; cursor: pointer; border: 0; color: inherit; }
+button:disabled { cursor: default; opacity: .38; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:hover:not(:disabled) { filter: brightness(1.08); }
+button:active:not(:disabled) { transform: translateY(1px); }
+.app {
+  --bg: #f4f5f6; --panel: #fff; --key: #e7e9ec; --text: #182027; --muted: #56636e; --line: #dce1e5; --accent: #087f8d; --accent-text: #fff; --error: #b7253b;
+  height: 100%; min-width: 320px; padding: 18px; background: var(--bg); color: var(--text); display: flex; flex-direction: column; gap: 16px; outline: none; overflow: hidden;
+}
+.app[data-theme="dark"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; --error: #ff8997; }
+@media (prefers-color-scheme: dark) { .app[data-theme="system"] { --bg: #171b20; --panel: #21272e; --key: #303943; --text: #edf3f7; --muted: #aebac5; --line: #3d4751; --accent: #62d4df; --accent-text: #10272a; --error: #ff8997; } }
+.app[data-theme="light"] { color-scheme: light; }
+.app[data-theme="dark"] { color-scheme: dark; }
+.toolbar, .brand, .toolbar-actions, .panel-heading, .expression-row { display: flex; align-items: center; gap: 10px; }
+.toolbar, .panel-heading { justify-content: space-between; flex: none; }
+.brand { font-weight: 650; letter-spacing: -.2px; }
+.brand-icon { font-size: 22px; width: 30px; height: 30px; text-align: center; border-radius: 9px; background: var(--accent); color: var(--accent-text); }
+.toolbar button, .display button, .panel-heading button, .notice button { background: transparent; border-radius: 8px; min-width: 32px; min-height: 32px; font-size: 20px; }
+.modes { display: flex; gap: 6px; flex: none; }
+.modes button { flex: 1; min-width: 0; padding: 11px 4px; border-radius: 24px; background: var(--key); font-size: 13px; }
+button[aria-pressed="true"] { background: var(--accent) !important; color: var(--accent-text); font-weight: 650; }
+.workspace { display: flex; gap: 18px; min-height: 0; flex: 1; position: relative; }
+.calculator { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; gap: 16px; padding: 3px; }
+.display { flex: none; padding: 4px 7px 0; text-align: right; }
+.expression-row { min-height: 32px; }
+.expression { flex: 1; min-width: 0; white-space: nowrap; overflow: auto; color: var(--muted); font-size: 13px; }
+.result { display: block; font-size: clamp(26px, 7vw, 42px); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.8px; overflow-x: auto; white-space: nowrap; margin: 5px 0 12px; }
+.error-detail { margin: 0 0 10px; color: var(--error); }
+.angle { font-size: 12px !important; color: var(--muted); }
+.base-readout { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
+.base-readout button { background: var(--key); text-align: left; padding: 8px 10px; min-width: 0; }
+.base-label { font-size: 11px; display: block; opacity: .8; }
+.base-value { font-size: 12px; font-family: ui-monospace, monospace; display: block; overflow-x: auto; white-space: nowrap; padding-top: 4px; }
+.keypad { flex: 1; display: grid; gap: 7px; align-content: stretch; min-height: 320px; padding: 3px; }
+.keypad.standard { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.keypad.scientific { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.scientific-functions, .scientific-numeric { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(6,minmax(44px,1fr)); gap: 7px; }
+.keypad.programmer { grid-template-columns: repeat(6,minmax(0,1fr)); min-height: 320px; }
+.key { min-height: 44px; padding: 9px 4px; border-radius: 30px; background: var(--key); font-size: 17px; white-space: nowrap; }
+.key.function { font-size: 13px; }
+.key.equals { background: var(--accent); color: var(--accent-text); font-size: 24px; }
+.keypad.programmer .equals { grid-column: span 2; }
+.history { width: 265px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; min-height: 0; }
+.panel-heading h2 { font-size: 17px; margin: 0; }
+.history-list { flex: 1; min-height: 0; overflow-y: auto; margin: 12px -5px; }
+.history-entry { display: block; width: 100%; background: transparent; text-align: right; border-radius: 8px; padding: 12px 8px; overflow-wrap: anywhere; }
+.history-expression { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+.history-entry strong { font-weight: 550; font-size: 18px; }
+.empty-state { color: var(--muted); text-align: center; padding: 24px 10px; }
+.clear-history, .dialog-done { background: var(--key); border-radius: 9px; padding: 10px 14px; }
+.notice { position: absolute; bottom: 18px; left: 24px; right: 24px; margin: auto; max-width: 540px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 6px 30px #0003; z-index: 5; }
+.notice span { flex: 1; overflow-wrap: anywhere; }
+.modal-backdrop { position: absolute; inset: 0; background: #0006; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+.dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; width: 100%; max-width: 500px; max-height: 100%; overflow-y: auto; box-shadow: 0 20px 80px #0005; }
+.dialog p { line-height: 1.6; }
+.dialog fieldset { display: flex; gap: 6px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-top: 20px; }
+.dialog fieldset button { flex: 1; background: var(--key); border-radius: 8px; padding: 10px 5px; }
+.dialog-done { display: block; margin: 20px 0 0 auto; background: var(--accent); color: var(--accent-text); }
+.about-mark { font-size: 44px; color: var(--accent); margin: 15px 0 0; }
+.muted { color: var(--muted); font-size: 12px; }
+.shortcuts { display: grid; grid-template-columns: minmax(110px,1fr) 2fr; gap: 12px; margin-top: 20px; font-size: 12px; line-height: 1.5; }
+.shortcuts dt { font-weight: 650; }
+.shortcuts dd { margin: 0; color: var(--muted); }
+@media (max-width: 700px) {
+  .with-history .history { position: absolute; inset: 0 0 0 auto; width: min(300px,100%); z-index: 4; box-shadow: -12px 0 36px #0004; }
+  .keypad.scientific { grid-template-columns: minmax(0,1fr); min-height: 620px; }
+}
+@media (max-width: 420px) { .app { padding: 12px; gap: 12px; } .keypad { gap: 5px; } .keypad.programmer .key { font-size: 12px; } .brand { font-size: 13px; } .toolbar-actions { gap: 3px; } }
+@media (prefers-reduced-motion: reduce) { button:active { transform: none; } }

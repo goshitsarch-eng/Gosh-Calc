@@ -1,0 +1,40 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Gosh Calc" Manufacturer="goshitsarch-eng" Version="$(var.Version)"
+           UpgradeCode="AF78C38A-5D97-46F1-BD3E-A49486C2A6F1" Scope="perUser" Language="1033">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Gosh Calc is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="GoshIcon" SourceFile="$(var.ProjectDir)/resources/icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="GoshIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/goshitsarch-eng/Gosh-Calc" />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="Gosh Calc">
+        <Component Id="Executable" Guid="*">
+          <File Id="GoshExecutable" Source="$(var.SourceDir)/gosh-calc.exe" />
+          <RegistryValue Root="HKCU" Key="Software\Gosh Apps\Gosh Calc" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+          <RemoveFolder Id="RemoveInstallDirectory" On="uninstall" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="GoshStartMenu" Name="Gosh Calc">
+        <Component Id="StartMenu" Guid="CD4D61BE-0FF5-475C-BE14-4D72F1D5AB04">
+          <Shortcut Id="Launch" Name="Gosh Calc" Target="[#GoshExecutable]" WorkingDirectory="INSTALLFOLDER" Icon="GoshIcon" />
+          <RemoveFolder Id="RemoveStartMenu" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\Gosh Apps\Gosh Calc" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="F6DD60F4-BCE0-4DD8-9651-6126213292F7">
+        <Shortcut Id="DesktopLaunch" Name="Gosh Calc" Target="[#GoshExecutable]" WorkingDirectory="INSTALLFOLDER" Icon="GoshIcon" />
+        <RegistryValue Root="HKCU" Key="Software\Gosh Apps\Gosh Calc" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+    <Feature Id="Main" Title="Gosh Calc" Level="1">
+      <ComponentRef Id="Executable" /><ComponentRef Id="StartMenu" />
+    </Feature>
+    <Feature Id="Desktop" Title="Desktop shortcut" Level="2">
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+  </Package>
+</Wix>
