@@ -7,7 +7,7 @@
   <summary>Standard, scientific, and programmer calculator</summary>
   <description>
     <p>
-      Gosh Calc is a cross-platform calculator built with Rust and Dioxus. It
+      Gosh Calc is a cross-platform calculator built with Godot Engine. It
       provides standard, scientific, and programmer modes, full keyboard
       support, and persistent history.
     </p>
@@ -34,6 +34,9 @@
   </supports>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.3.0-alpha.1" date="2026-10-28" type="development">
+      <description><p>Rewrite in Godot Engine 4 with behavior verified against the previous release.</p></description>
+    </release>
     <release version="0.2.0-alpha.1" date="2026-10-01" type="development">
       <description><p>Cross-platform Dioxus Desktop migration prerelease.</p></description>
     </release>

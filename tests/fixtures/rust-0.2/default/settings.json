@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "mode": "Standard",
+  "angle": "Deg",
+  "history": [],
+  "theme": "system",
+  "window": {
+    "width": 460.0,
+    "height": 700.0,
+    "maximized": false
+  }
+}

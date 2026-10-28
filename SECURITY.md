@@ -1,36 +1,24 @@
-# Security and dependency review
+# Security
 
-The calculator performs no network requests or external commands. History is
-rendered as text, never evaluated JavaScript. JSON/RON reads are bounded to 1 MiB,
-history to 100 records/256 bytes per field, and expression tokens/nesting are
-bounded. Saving uses a same-directory unique temporary file, sync and replacement;
-corrupt configuration and legacy imports retain backups. Future schemas disable
-saving. Application Rust contains no unsafe code.
+The calculator makes no network requests and runs no external commands or
+dynamic code: the project contains no use of `OS.execute`, `HTTPRequest`,
+sockets, `Expression` or similar (grep-able). History is rendered as text.
 
-`cargo audit` was run on 2026-10-01. Inspect its warnings as well as the
-vulnerability count. Dioxus Desktop's Linux GTK3 host fixes GLib's API line at
-0.18.5. RUSTSEC-2024-0429 is fixed by the upstream two-line backport in vendor/glib;
-forward/reverse Unicode iteration is tested in optimized builds. See
-vendor/README.md for the source checksum and upstream patch. An audit version
-match may still report that advisory because the backport retains the upstream
-version. Do not replace the fix with a blanket advisory ignore.
+* Settings and legacy-import reads are bounded to 1 MiB; history to 100 records
+  and 256 bytes per field; expression tokens and nesting are bounded; integer
+  arithmetic is overflow-checked.
+* Saving writes a unique temporary file in the same directory and renames it
+  over the target. This code does not call `fsync` (unlike 0.2): data is flushed but
+  not forced to disk before the rename; a power loss at the wrong instant could
+  lose the latest save (never corrupt the previous file's content in place).
+* Corrupt settings and legacy imports retain backups; future schemas and
+  oversized files disable saving instead of overwriting.
+* The only dependencies are Godot Engine (a stock official export template, MIT)
+  and two bundled fonts. Release builds use the engine's release templates
+  (no debugger or editor). The stock template contains networking and scripting
+  engine code that this application never calls. Track Godot security releases
+  and rebuild when they ship.
+* Flatpak permissions are limited to display sockets, IPC and graphics.
+* No packages are signed or notarized in this series.
 
-Transitive `fxhash`, `paste` and `proc-macro-error` have unmaintained advisories.
-`rand` 0.7.3 is used by the WebView's build-time selector generator and has
-RUSTSEC-2026-0097 concerning a custom logger that recursively uses RNG. This
-application neither implements that logger nor uses that rand version for
-application randomness. These are upstream dependency liabilities to revisit
-with future Dioxus/WebView releases, not silently suppressed audit results.
-The macOS host also includes `block` 0.1.6, which emits a Rust future-
-incompatibility warning; both macOS compilation checks currently pass.
-
-Dioxus 0.7.10 references Wry inspector methods even with its development tools
-feature disabled. A narrow direct Wry feature enables compilation; production
-WebViews leave inspection disabled and do not include Dioxus's development server.
-
-Cargo and Flatpak archive checksum verification, Debian package signatures, TLS
-and WebKit sandboxing stay enabled. Flatpak production permissions are limited
-to display sockets, IPC and graphics. UI QA uses a separate build feature and a
-narrow temporary-directory grant for collecting its outcome. Neither ships as
-extra application functionality. Upstream unsafe code remains within native
-integration dependencies; the isolated backport repairs its C out-pointer use.
+Report vulnerabilities privately via the repository's security advisory page.

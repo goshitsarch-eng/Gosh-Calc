@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "mode": "Scientific",
+  "angle": "Deg",
+  "history": [],
+  "theme": "light",
+  "window": {
+    "width": 460.0,
+    "height": 700.0,
+    "maximized": false
+  }
+}
