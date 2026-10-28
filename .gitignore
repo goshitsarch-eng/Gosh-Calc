@@ -1,11 +1,17 @@
-/target
-/.flatpak-builder
-/build-dir
-/repo
-/dist
-Cargo.lock.bak
+# Godot
+.godot/
+.import/
+*.translation
+export_credentials.cfg
 
+# build output
+/build/
+/dist/
+*.pck
+*.tmp
+
+# tooling
 __pycache__/
-/qa-dist/
-/flatpak/.qa-manifest.json
-*.wixpdb
+.flatpak-builder/
+/build-dir/
+/repo/

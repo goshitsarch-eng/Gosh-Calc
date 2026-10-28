@@ -5,8 +5,42 @@ on:
   pull_request:
 permissions:
   contents: read
+env:
+  GODOT_VERSION: 4.7.2
 jobs:
-  native:
-    uses: ./.github/workflows/native.yml
-  flatpak:
-    uses: ./.github/workflows/flatpak.yml
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install display and GL dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb libgl1 libgl1-mesa-dri libxcursor1 libxinerama1 libxi6 libxrandr2 libasound2t64 fontconfig
+      - name: Install Godot
+        run: |
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo install -m755 "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
+      - name: Tests (unit, golden corpus, UI at 100% and 200%)
+        run: scripts/test.sh
+  export:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and export templates
+        run: |
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q godot.zip
+          sudo install -m755 "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          mkdir -p ~/.local/share/godot/export_templates
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - run: scripts/export.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/

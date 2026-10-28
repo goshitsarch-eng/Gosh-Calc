@@ -1,40 +1,31 @@
 # Contributing
 
-Read BUILDING.md for your OS, ARCHITECTURE.md for boundaries, and
-MIGRATION_AUDIT.md for the old behavior and migration decisions.
+Read ARCHITECTURE.md for the layer boundaries and BUILDING.md for setup.
 
 ```sh
-python3 scripts/verify.py
-cargo build --locked --features ui-test
-python3 scripts/smoke.py target/debug/gosh-calc  # .exe on Windows
+scripts/test.sh          # must pass; UI checks are not optional for UI changes
 ```
 
-The desktop suite launches the real native WebView, requires completed checks,
-and rejects missing/stale outcome files or nonzero exit. It is not included in
-production builds. Without system GUI libraries use `scripts/verify.py --core`;
-report that as core validation only. Flatpak QA is a separate build/install/run
-from BUILDING.md and is never silently skipped by the native verification script.
+Rules of thumb:
 
-Keep domain math in engine, availability/actions in commands, durable settings
-in persistence/state, and native behavior in platform. All UI entry points use
-the shared command dispatcher. Use Path/PathBuf, bounded parsing, checked math,
-visible errors and backups. Preserve useful behavior and update the audit and
-platform matrix when evidence changes. Do not duplicate the reducer in tests.
+* Domain math lives in `core/engine.gd`, availability and actions in
+  `core/commands.gd`/`core/app_state.gd`, persistence in `core/store.gd`. All UI
+  entry points go through `run(command)` in `ui/main.gd`; never duplicate the reducer.
+* Behavior is pinned by `tests/golden`. A deliberate behavior change must update
+  the corpus knowingly (and say so); an unintended diff is a regression.
+* Use checked integer math, bounded parsing, visible errors and backups. Never
+  use Godot's `to_float`/`str(float)` for calculator values: use `GcNum`.
+* No mutable data beside the executable; do not log calculation history; no
+  network or external commands (see SECURITY.md).
+* New `class_name` scripts need `godot --headless --path . --import` once before
+  tests can see them. Commit the `.uid` and `.import` files.
 
-No mutable settings belong beside the executable. Do not log calculation
-history. Avoid app unsafe code and shell commands. Review new dependencies for
-license, maintenance and platform support; see SECURITY.md and vendor/README.md
-for the current host-stack backport and dependency limitations.
+Manual QA before a stable release: every visible control and menu, real
+shortcuts/clipboard, error recovery, all bases, history recall/clear, settings
+persistence after close/reopen, corrupted settings, minimum and maximized
+windows, high DPI, keyboard focus, screen readers, all theme modes (including
+live OS dark-mode changes), and each platform package. Record evidence rather
+than inferring support from a successful export.
 
-Manual QA before a stable release: exercise every visible control and native
-menu, real shortcuts/clipboard, error recovery, all bases, history recall/clear,
-settings persistence after close/reopen, corrupted configuration, minimum and
-maximized windows, high DPI, keyboard focus and screen readers, all theme modes,
-Windows install/upgrade/uninstall, both macOS architectures and the installed
-Flatpak. Record evidence rather than inferring support from compile results.
-
-Version 0.2.0-alpha.N is the rewrite preview series. Native CI covers Linux x86_64/
-arm64, Windows MSVC and both Mac architectures; Flatpak has two native runners.
-A version tag invokes the same gates and packages before publication. See
-[docs/RELEASING.md](docs/RELEASING.md). Historical 0.1 design notes remain in git
-history; current root documents describe the canonical Dioxus application.
+Versions `0.3.0-alpha.N` are the Godot rewrite preview series. A `v*` tag runs
+`.github/workflows/release.yml`, which re-runs the tests and packages.
